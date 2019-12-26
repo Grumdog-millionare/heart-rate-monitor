@@ -1,1 +1,1 @@
-Edit `scripts/jlink.commands` to replace `<full-path-to-warp-firmware>` with the full path to your Warp firmware directory.
+Edit `scripts/jlink.commands` to replace `<full-path-to-heart-rate-monitor>` with the full path to your copy of the repository.
