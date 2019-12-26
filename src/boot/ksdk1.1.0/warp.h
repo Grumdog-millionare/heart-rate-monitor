@@ -5,6 +5,7 @@
 
 typedef enum
 {
+	kWarpTypeMaskReading,
 	/*
 	 *	Always keep these two as the last items.
 	 */
@@ -93,27 +94,7 @@ typedef enum
 
 typedef enum
 {
-	kWarpSensorADXL362,
-	kWarpSensorMMA8451Q,
-	kWarpSensorBME680,
-	kWarpSensorBMX055accel,
-	kWarpSensorBMX055gyro,
-	kWarpSensorBMX055mag,
-	kWarpSensorTMP006B,
-	kWarpSensorMAG3110,
-	kWarpSensorL3GD20H,
-	kWarpSensorLPS25H,
-	kWarpSensorTCS34725,
-	kWarpSensorSI4705,
-	kWarpSensorHDC1000,
-	kWarpSensorSI7021,
-	kWarpSensorAMG8834,
-	kWarpSensorCCS811,
-	kWarpSensorPAN1326,
-	kWarpSensorAS7262,
-	kWarpSensorAS7263,
-	kWarpSensorSCD30,
-	kWarpSensorINA219,
+	kWarpSensorMAX30105,
 } WarpSensorDevice;
 
 typedef enum
@@ -123,7 +104,7 @@ typedef enum
 
 typedef enum
 {
-	kWarpSizesI2cBufferBytes = 4,
+	kWarpSizesI2cBufferBytes = 6,
 	kWarpSizesSpiBufferBytes = 3,
 	kWarpSizesBME680CalibrationValuesCount = 41,
 } WarpSizes;
@@ -139,16 +120,16 @@ typedef struct
 
 typedef enum
 {
-	kWarpSensorConfigurationRegisterINA219Configuration = 0x00,
-	kWarpSensorConfigurationRegisterINA219Calibration = 0x05,
-} WarpSensorConfigurationRegister;
-
-typedef enum
-{
-	kWarpSensorOutputRegisterINA219Configuration = 0x00,
-	kWarpSensorOutputRegisterINA219Current = 0x04,
-	kWarpSensorOutputRegisterINA219Calibration = 0x05,
-} WarpSensorOutputRegister;
+	FIFO_DATA = 0x07, // Read from this register
+	FIFO_CONFIG = 0x08,
+	MODE_CONFIG = 0x09,
+	SPO2_CONFIG = 0x0A,
+	LED1_PULSE_AMPLITUDE = 0x0C,
+	LED2_PULSE_AMPLITUDE = 0x0D,
+	LED3_PULSE_AMPLITUDE = 0x0E,
+	PROX_MODE_LED_PULSE_AMPLITUDE = 0x10,
+	MULTI_LED_MODE_CONTROL_CONFIG = 0x11,
+} MAX30105Register;
 
 typedef struct
 {

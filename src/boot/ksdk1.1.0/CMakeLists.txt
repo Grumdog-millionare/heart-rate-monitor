@@ -90,7 +90,7 @@ ADD_EXECUTABLE(Warp
     "${ProjDirPath}/../../src/warp-kl03-ksdk1.1-boot.c"
     "${ProjDirPath}/../../src/warp-kl03-ksdk1.1-powermodes.c"
     "${ProjDirPath}/../../src/devSSD1331.c"
-    "${ProjDirPath}/../../src/devINA219.c"
+    "${ProjDirPath}/../../src/devMAX30105.c"
     "${ProjDirPath}/../../src/SEGGER_RTT.c"
     "${ProjDirPath}/../../src/SEGGER_RTT_printf.c"
     "${ProjDirPath}/../../../../platform/drivers/src/i2c/fsl_i2c_irq.c"

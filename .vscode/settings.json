@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "fsl_clock_manager.h": "c",
+        "stdlib.h": "c"
+    }
+}
