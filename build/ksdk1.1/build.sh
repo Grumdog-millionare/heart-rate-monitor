@@ -1,6 +1,6 @@
 #!/bin/sh
 	
-	export ARMGCC_DIR=/usr
+	export ARMGCC_DIR=~/Tools/bare-metal-arm/gcc-arm
 
 	mkdir -p work
 	mkdir -p work/boards/Warp
