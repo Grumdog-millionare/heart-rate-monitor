@@ -679,8 +679,6 @@ void warpLowPowerSecondsSleep(uint32_t sleepSeconds, bool forceAllPinsIntoLowPow
 
 int main(void)
 {
-	volatile WarpI2CDeviceState *deviceMAX30105State = NULL;
-
 	rtc_datetime_t warpBootDate;
 
 	power_manager_user_config_t warpPowerModeWaitConfig;
@@ -862,23 +860,21 @@ int main(void)
 	 */
 	disableSssupply();
 
-	/*
-	 *	Initialize all the sensors
-	 */
+	// Initialize all devices and enable I2C
 	devSSD1331init();
-	devMAX30105init(0xAE);
-	SEGGER_RTT_printf(0, "TEST 1\n", 0);
-	configureSensorMAX30105();
-	SEGGER_RTT_printf(0, "TEST 9\n", 0);
+	devMAX30105init(0x57 /* i2cAddress */);
+	enableI2Cpins(32768);
 
-	uint16_t data[6];
+	// Configure MAX30105
+	configureSensorMAX30105();
+
 	uint32_t sample[2];
 
 	while (1)
 	{
-		readSample(data, sample);
-		SEGGER_RTT_printf(0, "Sample: %02u %02u ", sample[0], sample[1]);
-		OSA_TimeDelay(10);
+		readLatestSample(sample);
+		SEGGER_RTT_printf(0, "Sample: %u %u \n", sample[0], sample[1]);
+		OSA_TimeDelay(100);
 	}
 
 	return 0;

@@ -54,13 +54,11 @@ writeSensorRegisterMAX30105(uint8_t deviceRegister, uint8_t payload)
 		return kWarpStatusBadDeviceCommand;
 	}
 	}
-	SEGGER_RTT_printf(0, "TEST 3.1\n", 0);
 
 	i2c_device_t slave =
 		{
 			.address = deviceMAX30105State.i2cAddress,
 			.baudRate_kbps = gWarpI2cBaudRateKbps};
-	SEGGER_RTT_printf(0, "TEST 3.2, 0x%02x, 0x%02x \n", slave.address);
 
 	commandByte[0] = deviceRegister;
 	payloadByte[0] = payload;
@@ -73,7 +71,6 @@ writeSensorRegisterMAX30105(uint8_t deviceRegister, uint8_t payload)
 		1,
 		gWarpI2cTimeoutMilliseconds);
 
-	SEGGER_RTT_printf(0, "TEST 3.3\n", 0);
 	if (status != kStatus_I2C_Success)
 	{
 		return kWarpStatusDeviceCommunicationFailed;
@@ -95,39 +92,29 @@ configureSensorMAX30105()
 		i2cWriteStatus_MODE_CONFIG,
 		i2cWriteStatus_MULTI_LED_MODE_CONTROL_CONFIG;
 
-	SEGGER_RTT_printf(0, "TEST 2\n", 0);
-
 	// SET FIFO: Sample averaging = 4, FIFO rolls on full = True
 	i2cWriteStatus_FIFO_CONFIG = writeSensorRegisterMAX30105(FIFO_CONFIG, 0x50);
-	SEGGER_RTT_printf(0, "TEST 4 ", 0);
 
 	// SET SPO2: ADC range = 16384, Sample rate = 400 Hz, Pulse width = 215 us
 	i2cWriteStatus_SPO2_CONFIG = writeSensorRegisterMAX30105(SPO2_CONFIG, 0x6E);
-	SEGGER_RTT_printf(0, "TEST 5 ", 0);
 
 	// SET LED1 PULSE AMPLITUDE: Current level = 0.2 mA
 	i2cWriteStatus_LED1_CONFIG = writeSensorRegisterMAX30105(LED1_PULSE_AMPLITUDE, 0x01);
-	SEGGER_RTT_printf(0, "TEST 6 ", 0);
 
 	// SET LED2 PULSE AMPLITUDE: Current level = 12.5 mA
 	i2cWriteStatus_LED2_CONFIG = writeSensorRegisterMAX30105(LED2_PULSE_AMPLITUDE, 0x3F);
-	SEGGER_RTT_printf(0, "TEST 7 ", 0);
 
 	// SET LED3 PULSE AMPLITUDE: Current level = 0.0 mA
 	i2cWriteStatus_LED3_CONFIG = writeSensorRegisterMAX30105(LED3_PULSE_AMPLITUDE, 0x00);
-	SEGGER_RTT_printf(0, "TEST 8 ", 0);
 
 	// SET LED PROXIMITY MODE PULSE AMPLITUDE: Current level = 6.4mA
 	i2cWriteStatus_LED_PROX_CONFIG = writeSensorRegisterMAX30105(PROX_MODE_LED_PULSE_AMPLITUDE, 0x1F);
-	SEGGER_RTT_printf(0, "TEST 9 ", 0);
 
 	// SET MODE: Particle sensing mode using 2 LEDs
 	i2cWriteStatus_MODE_CONFIG = writeSensorRegisterMAX30105(MODE_CONFIG, 0x03);
-	SEGGER_RTT_printf(0, "TEST 10 ", 0);
 
 	// SET MULTI LED MODE CONTROL: Particle sensing mode using 2 LEDs
 	i2cWriteStatus_MULTI_LED_MODE_CONTROL_CONFIG = writeSensorRegisterMAX30105(MULTI_LED_MODE_CONTROL_CONFIG, 0x21);
-	SEGGER_RTT_printf(0, "TEST 11 ", 0);
 
 	return (i2cWriteStatus_FIFO_CONFIG |
 			i2cWriteStatus_SPO2_CONFIG |
@@ -184,27 +171,61 @@ readSensorRegisterMAX30105(uint8_t deviceRegister, int numberOfBytes)
 	return kWarpStatusOK;
 }
 
-WarpStatus readSample(uint16_t *data, uint32_t *sample)
+SamplingStatus readLatestSample(uint32_t *sample)
 {
 
-	WarpStatus i2cReadStatus;
+	// WarpStatus i2cReadStatus_FIFO_READ, i2cReadStatus_FIFO_WRITE, i2cReadStatus_FIFO_DATA;
 
-	i2cReadStatus = readSensorRegisterMAX30105(FIFO_DATA, 6 /* numberOfBytes */);
+	// // Read READ pointer
+	// i2cReadStatus_FIFO_READ = readSensorRegisterMAX30105(FIFO_READ, 1 /* numberOfBytes */);
+	// uint8_t read_pointer = deviceMAX30105State.i2cBuffer[0];
 
-	if (i2cReadStatus != kWarpStatusOK)
-	{
-		return kWarpStatusDeviceCommunicationFailed;
-	}
+	// // Read WRITE pointer
+	// i2cReadStatus_FIFO_WRITE = readSensorRegisterMAX30105(FIFO_WRITE, 1 /* numberOfBytes */);
+	// uint8_t write_pointer = deviceMAX30105State.i2cBuffer[0];
 
+	// if (read_pointer == write_pointer)
+	// {
+	// 	return kSampleNotUpdated;
+	// }
+
+	// uint8_t sample_count = write_pointer - read_pointer;
+
+	// if (sample_count < 0)
+	// {
+	// 	sample_count = 32;
+	// }
+
+	// uint8_t byte_count = sample_count * 3 * 2; // 3 bytes for each of the two channels (RED and IR)
+
+	// uint8_t data[byte_count];
+
+	// i2cReadStatus_FIFO_DATA = readSensorRegisterMAX30105(FIFO_DATA, byte_count /* numberOfBytes */);
+
+	// if ((i2cReadStatus_FIFO_READ | i2cReadStatus_FIFO_WRITE | i2cReadStatus_FIFO_DATA) != kWarpStatusOK)
+	// {
+	// 	return kWarpStatusDeviceCommunicationFailed;
+	// }
+
+	// for (int i = 0; i < byte_count; i++)
+	// {
+	// 	data[i] = deviceMAX30105State.i2cBuffer[i];
+	// }
+
+	// int last_red_sample_index = byte_count - 6;
+	// int last_ir_sample_index = byte_count - 3;
+	// sample[0] = (data[last_red_sample_index] << 16) | (data[last_red_sample_index + 1] << 8) | (data[last_red_sample_index + 2]); // RED channel
+	// sample[1] = (data[last_ir_sample_index] << 16) | (data[last_ir_sample_index + 1] << 8) | (data[last_ir_sample_index + 2]);	// IR channel
+
+	WarpStatus i2cReadStatus = readSensorRegisterMAX30105(FIFO_DATA, 6 /* numberOfBytes */);
+	uint8_t data[6];
 	for (int i = 0; i < 6; i++)
 	{
 		data[i] = deviceMAX30105State.i2cBuffer[i];
 	}
 
-	for (int i = 0; i < 2; i++)
-	{
-		sample[i] = (data[i] << 16) | (data[i + 1] << 8) | (data[i + 2]);
-	}
+	sample[0] = (data[0] << 16) | (data[1] << 8) | (data[2]);
+	sample[1] = (data[3] << 16) | (data[4] << 8) | (data[5]);
 
 	return kWarpStatusOK;
 }

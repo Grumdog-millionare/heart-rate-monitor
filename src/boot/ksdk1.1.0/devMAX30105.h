@@ -7,4 +7,4 @@ WarpStatus configureSensorMAX30105();
 
 WarpStatus readSensorRegisterMAX30105(uint8_t deviceRegister, int numberOfBytes);
 
-WarpStatus readSample(uint16_t *data, uint32_t *sample);
+WarpStatus readLatestSample(uint32_t *sample);

@@ -104,7 +104,7 @@ typedef enum
 
 typedef enum
 {
-	kWarpSizesI2cBufferBytes = 6,
+	kWarpSizesI2cBufferBytes = 192, // Maximum number of bytes in MAX30105's FIFO for 2 channels
 	kWarpSizesSpiBufferBytes = 3,
 	kWarpSizesBME680CalibrationValuesCount = 41,
 } WarpSizes;
@@ -120,6 +120,8 @@ typedef struct
 
 typedef enum
 {
+	FIFO_WRITE = 0x04,
+	FIFO_READ = 0x06,
 	FIFO_DATA = 0x07, // Read from this register
 	FIFO_CONFIG = 0x08,
 	MODE_CONFIG = 0x09,
@@ -130,6 +132,12 @@ typedef enum
 	PROX_MODE_LED_PULSE_AMPLITUDE = 0x10,
 	MULTI_LED_MODE_CONTROL_CONFIG = 0x11,
 } MAX30105Register;
+
+typedef enum
+{
+	kSampleOK = 0,
+	kSampleNotUpdated,
+} SamplingStatus;
 
 typedef struct
 {
