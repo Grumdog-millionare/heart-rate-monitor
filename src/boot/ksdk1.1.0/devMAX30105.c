@@ -25,7 +25,7 @@ void devMAX30105init(const uint8_t i2cAddress)
 	return;
 }
 
-WarpStatus
+CommStatus
 writeSensorRegisterMAX30105(uint8_t deviceRegister, uint8_t payload)
 {
 	uint8_t payloadByte[1], commandByte[1];
@@ -51,7 +51,7 @@ writeSensorRegisterMAX30105(uint8_t deviceRegister, uint8_t payload)
 
 	default:
 	{
-		return kWarpStatusBadDeviceCommand;
+		return CommStatusBadDeviceCommand;
 	}
 	}
 
@@ -73,16 +73,16 @@ writeSensorRegisterMAX30105(uint8_t deviceRegister, uint8_t payload)
 
 	if (status != kStatus_I2C_Success)
 	{
-		return kWarpStatusDeviceCommunicationFailed;
+		return CommStatusDeviceCommunicationFailed;
 	}
 
-	return kWarpStatusOK;
+	return CommStatusOK;
 }
 
-WarpStatus
+CommStatus
 configureSensorMAX30105()
 {
-	WarpStatus
+	CommStatus
 		i2cWriteStatus_FIFO_CONFIG,
 		i2cWriteStatus_SPO2_CONFIG,
 		i2cWriteStatus_LED1_CONFIG,
@@ -126,13 +126,12 @@ configureSensorMAX30105()
 			i2cWriteStatus_MULTI_LED_MODE_CONTROL_CONFIG);
 }
 
-WarpStatus
+CommStatus
 readSensorRegisterMAX30105(uint8_t deviceRegister, int numberOfBytes)
 {
 	uint8_t cmdBuf[1] = {0xFF};
 	i2c_status_t status;
 
-	USED(numberOfBytes);
 	switch (deviceRegister)
 	{
 	case 0x07:
@@ -143,7 +142,7 @@ readSensorRegisterMAX30105(uint8_t deviceRegister, int numberOfBytes)
 
 	default:
 	{
-		return kWarpStatusBadDeviceCommand;
+		return CommStatusBadDeviceCommand;
 	}
 	}
 
@@ -165,10 +164,10 @@ readSensorRegisterMAX30105(uint8_t deviceRegister, int numberOfBytes)
 
 	if (status != kStatus_I2C_Success)
 	{
-		return kWarpStatusDeviceCommunicationFailed;
+		return CommStatusDeviceCommunicationFailed;
 	}
 
-	return kWarpStatusOK;
+	return CommStatusOK;
 }
 
 SamplingStatus readLatestSample(uint32_t *sample)
@@ -217,7 +216,7 @@ SamplingStatus readLatestSample(uint32_t *sample)
 	// sample[0] = (data[last_red_sample_index] << 16) | (data[last_red_sample_index + 1] << 8) | (data[last_red_sample_index + 2]); // RED channel
 	// sample[1] = (data[last_ir_sample_index] << 16) | (data[last_ir_sample_index + 1] << 8) | (data[last_ir_sample_index + 2]);	// IR channel
 
-	WarpStatus i2cReadStatus = readSensorRegisterMAX30105(FIFO_DATA, 6 /* numberOfBytes */);
+	CommStatus i2cReadStatus = readSensorRegisterMAX30105(FIFO_DATA, 6 /* numberOfBytes */);
 	uint8_t data[6];
 	for (int i = 0; i < 6; i++)
 	{
@@ -227,5 +226,5 @@ SamplingStatus readLatestSample(uint32_t *sample)
 	sample[0] = (data[0] << 16) | (data[1] << 8) | (data[2]);
 	sample[1] = (data[3] << 16) | (data[4] << 8) | (data[5]);
 
-	return kWarpStatusOK;
+	return SampleOK;
 }
