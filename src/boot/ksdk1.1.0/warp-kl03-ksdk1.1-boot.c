@@ -84,14 +84,11 @@ void enableSPIpins(void)
 {
 	CLOCK_SYS_EnableSpiClock(0);
 
-	/*	Warp KL03_SPI_MISO	--> PTA6	(ALT3)		*/
-	PORT_HAL_SetMuxMode(PORTA_BASE, 6, kPortMuxAlt3);
+	// PTA8 -> MOSI
+	PORT_HAL_SetMuxMode(PORTA_BASE, 8u, kPortMuxAlt3);
 
-	/*	Warp KL03_SPI_MOSI	--> PTA7	(ALT3)		*/
-	PORT_HAL_SetMuxMode(PORTA_BASE, 7, kPortMuxAlt3);
-
-	/*	Warp KL03_SPI_SCK	--> PTB0	(ALT3)		*/
-	PORT_HAL_SetMuxMode(PORTB_BASE, 0, kPortMuxAlt3);
+	// PTA9 -> SCK
+	PORT_HAL_SetMuxMode(PORTA_BASE, 9u, kPortMuxAlt3);
 
 	/*
 	 *	Initialize SPI master. See KSDK13APIRM.pdf Section 70.4
@@ -110,18 +107,14 @@ void disableSPIpins(void)
 {
 	SPI_DRV_MasterDeinit(0);
 
-	/*	Warp KL03_SPI_MISO	--> PTA6	(GPI)		*/
-	PORT_HAL_SetMuxMode(PORTA_BASE, 6, kPortMuxAsGpio);
+	// PTA8 -> GPIO
+	PORT_HAL_SetMuxMode(PORTA_BASE, 8u, kPortMuxAsGpio);
 
-	/*	Warp KL03_SPI_MOSI	--> PTA7	(GPIO)		*/
-	PORT_HAL_SetMuxMode(PORTA_BASE, 7, kPortMuxAsGpio);
+	// PTA9 -> GPIO
+	PORT_HAL_SetMuxMode(PORTA_BASE, 9u, kPortMuxAsGpio);
 
-	/*	Warp KL03_SPI_SCK	--> PTB0	(GPIO)		*/
-	PORT_HAL_SetMuxMode(PORTB_BASE, 0, kPortMuxAsGpio);
-
-	GPIO_DRV_ClearPinOutput(kWarpPinSPI_MOSI);
-	GPIO_DRV_ClearPinOutput(kWarpPinSPI_MISO);
-	GPIO_DRV_ClearPinOutput(kWarpPinSPI_SCK);
+	GPIO_DRV_ClearPinOutput(kSSD1331PinMOSI);
+	GPIO_DRV_ClearPinOutput(kSSD1331PinSCK);
 
 	CLOCK_SYS_DisableSpiClock(0);
 }
@@ -152,8 +145,8 @@ void disableI2Cpins(void)
 	/*
 	 *	Drive the I2C pins low
 	 */
-	GPIO_DRV_ClearPinOutput(kWarpPinI2C0_SDA);
-	GPIO_DRV_ClearPinOutput(kWarpPinI2C0_SCL);
+	GPIO_DRV_ClearPinOutput(kMAX30105PinI2C0_SDA);
+	GPIO_DRV_ClearPinOutput(kMAX30105PinI2C0_SCL);
 
 	CLOCK_SYS_DisableI2cClock(0);
 }
@@ -221,12 +214,13 @@ int main(void)
 	OSA_TimeDelay(200);
 	GPIO_DRV_ClearPinOutput(kWarpPinSI4705_nRST);
 
+	// Enable SPI and I2C
+	enableSPIpins();
+	enableI2Cpins(32768);
+
 	// Initialize all devices
 	devSSD1331init();
 	devMAX30105init(0x57 /* i2cAddress */);
-
-	// Enable I2C and SPI
-	enableI2Cpins(32768);
 
 	// Enable interrupt
 	INT_SYS_EnableIRQ(PORTA_IRQn);
