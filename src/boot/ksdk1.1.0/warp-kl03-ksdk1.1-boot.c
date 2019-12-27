@@ -50,6 +50,7 @@
 #include "fsl_mcglite_hal.h"
 #include "fsl_port_hal.h"
 #include "fsl_lpuart_driver.h"
+#include "fsl_interrupt_manager.h"
 
 #include "gpio_pins.h"
 #include "SEGGER_RTT.h"
@@ -677,6 +678,13 @@ void warpLowPowerSecondsSleep(uint32_t sleepSeconds, bool forceAllPinsIntoLowPow
 	warpSetLowPowerMode(kWarpPowerModeVLPS, sleepSeconds);
 }
 
+void PORTA_IRQHandler(void)
+{
+
+	PORT_HAL_ClearPortIntFlag(PORTA_BASE);
+	SEGGER_RTT_printf(0, "Interrupt detected\n", 0);
+}
+
 int main(void)
 {
 	rtc_datetime_t warpBootDate;
@@ -867,6 +875,10 @@ int main(void)
 
 	// Configure MAX30105
 	configureSensorMAX30105();
+
+	// Enable interrupt
+	INT_SYS_EnableIRQ(PORTA_IRQn);
+	INT_SYS_EnableIRQGlobal();
 
 	uint32_t sample[2];
 

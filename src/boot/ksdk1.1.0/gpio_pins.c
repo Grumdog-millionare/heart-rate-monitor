@@ -128,12 +128,12 @@ gpio_output_pin_user_config_t outputPins[] = {
 		.config.slewRate = kPortSlowSlewRate,
 		.config.driveStrength = kPortLowDriveStrength,
 	},
-	{
-		.pinName = kWarpPinSPI_MOSI,
-		.config.outputLogic = 1,
-		.config.slewRate = kPortSlowSlewRate,
-		.config.driveStrength = kPortLowDriveStrength,
-	},
+	// {
+	// 	.pinName = kWarpPinSPI_MOSI,
+	// 	.config.outputLogic = 1,
+	// 	.config.slewRate = kPortSlowSlewRate,
+	// 	.config.driveStrength = kPortLowDriveStrength,
+	// },
 	{
 		.pinName = kWarpPinTPS82740A_CTLEN, /*	Was kWarpPinTPS82675_EN in Warp v2			*/
 		.config.outputLogic = 1,
@@ -224,6 +224,13 @@ gpio_input_pin_user_config_t inputPins[] = {
 		.config.pullSelect = kPortPullUp,
 		.config.isPassiveFilterEnabled = false,
 		.config.interrupt = kPortIntDisabled,
+	},
+	{
+		.pinName = kWarpPinSPI_MOSI,
+		.config.isPullEnable = true,
+		.config.pullSelect = kPortPullUp,
+		.config.isPassiveFilterEnabled = false,
+		.config.interrupt = kPortIntFallingEdge,
 	},
 	{
 		.pinName = GPIO_PINS_OUT_OF_RANGE,
