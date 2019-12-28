@@ -107,22 +107,22 @@ configureSensorMAX30105()
 	// SET PROX THRESHOLD: Data ready interrupt = Off, Proximity interrupt = On
 	i2cWriteStatus_PROXIMITY_THRESHOLD = writeSensorRegisterMAX30105(PROXIMITY_THRESHOLD, (THRESHOLD_UP >> 10));
 
-	// SET FIFO: Sample averaging = 4, FIFO rolls on full = True
-	i2cWriteStatus_FIFO_CONFIG = writeSensorRegisterMAX30105(FIFO_CONFIG, 0x50);
+	// SET FIFO: Sample averaging = 8, FIFO rolls on full = True
+	i2cWriteStatus_FIFO_CONFIG = writeSensorRegisterMAX30105(FIFO_CONFIG, 0x70);
 
 	// SET SPO2: ADC range = 16384, Sample rate = 400 Hz, Pulse width = 215 us
 	i2cWriteStatus_SPO2_CONFIG = writeSensorRegisterMAX30105(SPO2_CONFIG, 0x6E);
 
-	// SET LED1 (RED) PULSE AMPLITUDE: Current level = 0.2 mA 0x01
-	i2cWriteStatus_LED1_CONFIG = writeSensorRegisterMAX30105(LED1_PULSE_AMPLITUDE, 0xFF);
+	// SET LED1 (RED) PULSE AMPLITUDE: Current level = 0.4 mA (0x02)
+	i2cWriteStatus_LED1_CONFIG = writeSensorRegisterMAX30105(LED1_PULSE_AMPLITUDE, 0x02);
 
-	// SET LED2 (IR) PULSE AMPLITUDE: Current level = 12.5 mA 0x3F
-	i2cWriteStatus_LED2_CONFIG = writeSensorRegisterMAX30105(LED2_PULSE_AMPLITUDE, 0xFF);
+	// SET LED2 (IR) PULSE AMPLITUDE: Current level = 12.5 mA (0x3F)
+	i2cWriteStatus_LED2_CONFIG = writeSensorRegisterMAX30105(LED2_PULSE_AMPLITUDE, 0x3F);
 
-	// SET LED3 (GREEN) PULSE AMPLITUDE: Current level = 0.0 mA
+	// SET LED3 (GREEN) PULSE AMPLITUDE: Current level = 0.0 mA (0x00)
 	i2cWriteStatus_LED3_CONFIG = writeSensorRegisterMAX30105(LED3_PULSE_AMPLITUDE, 0x00);
 
-	// SET LED PROXIMITY MODE PULSE AMPLITUDE: Current level = 6.4mA 0x1F
+	// SET LED PROXIMITY MODE PULSE AMPLITUDE: Current level = 0.4 mA (0x02)
 	i2cWriteStatus_LED_PROX_CONFIG = writeSensorRegisterMAX30105(PROX_MODE_LED_PULSE_AMPLITUDE, 0x02);
 
 	// SET MODE: Particle sensing mode using 2 LEDs

@@ -82,7 +82,7 @@ volatile uint32_t gWarpSupplySettlingDelayMilliseconds = 1;
 
 // CONSTANTS
 const uint32_t THRESHOLD_UP = 1024;
-const uint32_t THRESHOLD_DOWN = 2048;
+const uint32_t THRESHOLD_DOWN = 200;
 
 // GLOBAL VARIABLES
 volatile bool active;
@@ -246,6 +246,8 @@ int main(void)
 	uint8_t buffer_pointer = 0;
 	uint16_t buffer_size = 0;
 
+	int display_value = 0;
+
 	// Read INTERRUPT_STATUS_1 to clear Power ready status
 	readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
 	interrupt_status = deviceMAX30105State.i2cBuffer[0];
@@ -264,7 +266,16 @@ int main(void)
 					buffer_size++;
 				}
 
-				SEGGER_RTT_printf(0, "Sample: %u\n", sample);
+				display_value = (sample - 315000) * 63 / 2000;
+				if (display_value > 63)
+				{
+					display_value = 63;
+				}
+				else if (display_value < 0)
+				{
+					display_value = 0;
+				}
+				SEGGER_RTT_printf(0, "Value: %u\n", display_value);
 
 				if ((sample < THRESHOLD_DOWN) && (buffer_size > 100))
 				{
