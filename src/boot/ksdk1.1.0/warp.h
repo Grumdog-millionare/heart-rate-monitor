@@ -21,6 +21,10 @@ typedef struct
 
 typedef enum
 {
+	INTERRUPT_STATUS_1 = 0x00,
+	INTERRUPT_STATUS_2 = 0x01,
+	INTERRUPT_ENABLE_1 = 0x02,
+	INTERRUPT_ENABLE_2 = 0x03,
 	FIFO_WRITE = 0x04,
 	FIFO_READ = 0x06,
 	FIFO_DATA = 0x07, // Read from this register
@@ -32,6 +36,7 @@ typedef enum
 	LED3_PULSE_AMPLITUDE = 0x0E,
 	PROX_MODE_LED_PULSE_AMPLITUDE = 0x10,
 	MULTI_LED_MODE_CONTROL_CONFIG = 0x11,
+	PROXIMITY_THRESHOLD = 0x30,
 } MAX30105Register;
 
 void enableI2Cpins(uint16_t pullupValue);

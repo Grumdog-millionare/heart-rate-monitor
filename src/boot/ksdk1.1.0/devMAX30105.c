@@ -33,9 +33,12 @@ writeSensorRegisterMAX30105(uint8_t deviceRegister, uint8_t payload)
 
 	switch (deviceRegister)
 	{
+	case 0x02:
+	case 0x03:
 	case 0x04:
 	case 0x05:
 	case 0x06:
+	case 0x07:
 	case 0x08:
 	case 0x09:
 	case 0x0A:
@@ -44,6 +47,8 @@ writeSensorRegisterMAX30105(uint8_t deviceRegister, uint8_t payload)
 	case 0x0E:
 	case 0x10:
 	case 0x11:
+	case 0x12:
+	case 0x30:
 	{
 		/* OK */
 		break;
@@ -83,6 +88,8 @@ CommStatus
 configureSensorMAX30105()
 {
 	CommStatus
+		i2cWriteStatus_INTERRUPT_ENABLE_1,
+		i2cWriteStatus_PROXIMITY_THRESHOLD,
 		i2cWriteStatus_FIFO_CONFIG,
 		i2cWriteStatus_SPO2_CONFIG,
 		i2cWriteStatus_LED1_CONFIG,
@@ -92,23 +99,29 @@ configureSensorMAX30105()
 		i2cWriteStatus_MODE_CONFIG,
 		i2cWriteStatus_MULTI_LED_MODE_CONTROL_CONFIG;
 
+	// SET INTERRUPT ENABLE: Data ready interrupt = Off, Proximity interrupt = On
+	i2cWriteStatus_INTERRUPT_ENABLE_1 = writeSensorRegisterMAX30105(INTERRUPT_ENABLE_1, 0x10);
+
+	// SET PROX THRESHOLD: Data ready interrupt = Off, Proximity interrupt = On
+	i2cWriteStatus_PROXIMITY_THRESHOLD = writeSensorRegisterMAX30105(PROXIMITY_THRESHOLD, 0x01);
+
 	// SET FIFO: Sample averaging = 4, FIFO rolls on full = True
 	i2cWriteStatus_FIFO_CONFIG = writeSensorRegisterMAX30105(FIFO_CONFIG, 0x50);
 
 	// SET SPO2: ADC range = 16384, Sample rate = 400 Hz, Pulse width = 215 us
 	i2cWriteStatus_SPO2_CONFIG = writeSensorRegisterMAX30105(SPO2_CONFIG, 0x6E);
 
-	// SET LED1 PULSE AMPLITUDE: Current level = 0.2 mA
-	i2cWriteStatus_LED1_CONFIG = writeSensorRegisterMAX30105(LED1_PULSE_AMPLITUDE, 0x01);
+	// SET LED1 (RED) PULSE AMPLITUDE: Current level = 0.2 mA 0x01
+	i2cWriteStatus_LED1_CONFIG = writeSensorRegisterMAX30105(LED1_PULSE_AMPLITUDE, 0xFF);
 
-	// SET LED2 PULSE AMPLITUDE: Current level = 12.5 mA
-	i2cWriteStatus_LED2_CONFIG = writeSensorRegisterMAX30105(LED2_PULSE_AMPLITUDE, 0x3F);
+	// SET LED2 (IR) PULSE AMPLITUDE: Current level = 12.5 mA 0x3F
+	i2cWriteStatus_LED2_CONFIG = writeSensorRegisterMAX30105(LED2_PULSE_AMPLITUDE, 0xFF);
 
-	// SET LED3 PULSE AMPLITUDE: Current level = 0.0 mA
+	// SET LED3 (GREEN) PULSE AMPLITUDE: Current level = 0.0 mA
 	i2cWriteStatus_LED3_CONFIG = writeSensorRegisterMAX30105(LED3_PULSE_AMPLITUDE, 0x00);
 
-	// SET LED PROXIMITY MODE PULSE AMPLITUDE: Current level = 6.4mA
-	i2cWriteStatus_LED_PROX_CONFIG = writeSensorRegisterMAX30105(PROX_MODE_LED_PULSE_AMPLITUDE, 0x1F);
+	// SET LED PROXIMITY MODE PULSE AMPLITUDE: Current level = 6.4mA 0x1F
+	i2cWriteStatus_LED_PROX_CONFIG = writeSensorRegisterMAX30105(PROX_MODE_LED_PULSE_AMPLITUDE, 0x02);
 
 	// SET MODE: Particle sensing mode using 2 LEDs
 	i2cWriteStatus_MODE_CONFIG = writeSensorRegisterMAX30105(MODE_CONFIG, 0x03);
@@ -116,7 +129,9 @@ configureSensorMAX30105()
 	// SET MULTI LED MODE CONTROL: Particle sensing mode using 2 LEDs
 	i2cWriteStatus_MULTI_LED_MODE_CONTROL_CONFIG = writeSensorRegisterMAX30105(MULTI_LED_MODE_CONTROL_CONFIG, 0x21);
 
-	return (i2cWriteStatus_FIFO_CONFIG |
+	return (i2cWriteStatus_INTERRUPT_ENABLE_1 |
+			i2cWriteStatus_PROXIMITY_THRESHOLD |
+			i2cWriteStatus_FIFO_CONFIG |
 			i2cWriteStatus_SPO2_CONFIG |
 			i2cWriteStatus_LED1_CONFIG |
 			i2cWriteStatus_LED2_CONFIG |
@@ -134,7 +149,30 @@ readSensorRegisterMAX30105(uint8_t deviceRegister, int numberOfBytes)
 
 	switch (deviceRegister)
 	{
+	case 0x00:
+	case 0x01:
+	case 0x02:
+	case 0x03:
+	case 0x04:
+	case 0x05:
+	case 0x06:
 	case 0x07:
+	case 0x08:
+	case 0x09:
+	case 0x0A:
+	case 0x0C:
+	case 0x0D:
+	case 0x0E:
+	case 0x10:
+	case 0x11:
+	case 0x12:
+	case 0x1F:
+	case 0x20:
+	case 0x21:
+	case 0x30:
+	case 0xFE:
+	case 0xFF:
+
 	{
 		/* OK */
 		break;

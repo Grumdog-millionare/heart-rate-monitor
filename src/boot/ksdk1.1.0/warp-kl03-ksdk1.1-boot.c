@@ -153,9 +153,10 @@ void disableI2Cpins(void)
 
 void PORTA_IRQHandler(void)
 {
-
+	// Perhaps need to abstract out large code to another function due to little space in the vector table
 	PORT_HAL_ClearPortIntFlag(PORTA_BASE);
 	SEGGER_RTT_printf(0, "Interrupt detected\n", 0);
+	return;
 }
 
 int main(void)
@@ -214,6 +215,9 @@ int main(void)
 	OSA_TimeDelay(200);
 	GPIO_DRV_ClearPinOutput(kWarpPinSI4705_nRST);
 
+	// Enable interrupt port
+	PORT_HAL_SetMuxMode(PORTA_BASE, 7u, kPortMuxAsGpio);
+
 	// Enable SPI and I2C
 	enableSPIpins();
 	enableI2Cpins(32768);
@@ -222,10 +226,6 @@ int main(void)
 	devSSD1331init();
 	devMAX30105init(0x57 /* i2cAddress */);
 
-	// Enable interrupt
-	INT_SYS_EnableIRQ(PORTA_IRQn);
-	INT_SYS_EnableIRQGlobal();
-
 	// Configure MAX30105
 	configureSensorMAX30105();
 
@@ -233,9 +233,13 @@ int main(void)
 
 	while (1)
 	{
-		readLatestSample(sample);
-		SEGGER_RTT_printf(0, "Sample: %u %u \n", sample[0], sample[1]);
-		OSA_TimeDelay(100);
+		//readLatestSample(sample);
+		//SEGGER_RTT_printf(0, "Sample: %u %u \n", sample[0], sample[1]);
+		OSA_TimeDelay(10000);
+		CommStatus i2cstatus = readSensorRegisterMAX30105(0x00, 1);
+		uint8_t interrupt_status = deviceMAX30105State.i2cBuffer[0];
+		SEGGER_RTT_printf(0, "COMM STATUS: %u \n", i2cstatus);
+		SEGGER_RTT_printf(0, "INT STATUS: %u \n", interrupt_status);
 	}
 
 	return 0;
