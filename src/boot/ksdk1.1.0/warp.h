@@ -11,6 +11,7 @@ typedef enum
 {
 	SampleOK = 0,
 	SampleNotUpdated,
+	SamplingFailed,
 } SamplingStatus;
 
 typedef struct

@@ -80,6 +80,13 @@ volatile uint32_t gWarpSpiTimeoutMicroseconds = 5;
 volatile uint32_t gWarpMenuPrintDelayMilliseconds = 10;
 volatile uint32_t gWarpSupplySettlingDelayMilliseconds = 1;
 
+// CONSTANTS
+const uint32_t THRESHOLD_UP = 1024;
+const uint32_t THRESHOLD_DOWN = 2048;
+
+// GLOBAL VARIABLES
+volatile bool active;
+
 void enableSPIpins(void)
 {
 	CLOCK_SYS_EnableSpiClock(0);
@@ -156,6 +163,7 @@ void PORTA_IRQHandler(void)
 	// Perhaps need to abstract out large code to another function due to little space in the vector table
 	PORT_HAL_ClearPortIntFlag(PORTA_BASE);
 	SEGGER_RTT_printf(0, "Interrupt detected\n", 0);
+	active = true;
 	return;
 }
 
@@ -229,17 +237,49 @@ int main(void)
 	// Configure MAX30105
 	configureSensorMAX30105();
 
-	uint32_t sample[2];
+	// Variables
+	active = false;
+	uint8_t interrupt_status;
+
+	uint32_t sample;
+	uint32_t buffer[256];
+	uint8_t buffer_pointer = 0;
+	uint16_t buffer_size = 0;
+
+	// Read INTERRUPT_STATUS_1 to clear Power ready status
+	readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
+	interrupt_status = deviceMAX30105State.i2cBuffer[0];
 
 	while (1)
 	{
-		//readLatestSample(sample);
-		//SEGGER_RTT_printf(0, "Sample: %u %u \n", sample[0], sample[1]);
-		OSA_TimeDelay(10000);
-		CommStatus i2cstatus = readSensorRegisterMAX30105(0x00, 1);
-		uint8_t interrupt_status = deviceMAX30105State.i2cBuffer[0];
-		SEGGER_RTT_printf(0, "COMM STATUS: %u \n", i2cstatus);
-		SEGGER_RTT_printf(0, "INT STATUS: %u \n", interrupt_status);
+		while (active)
+		{
+			SamplingStatus readStatus = readNextSample(&sample);
+			if (readStatus == SampleOK)
+			{
+				buffer[buffer_pointer] = sample;
+				buffer_pointer++;
+				if (buffer_size < 256)
+				{
+					buffer_size++;
+				}
+
+				SEGGER_RTT_printf(0, "Sample: %u\n", sample);
+
+				if ((sample < THRESHOLD_DOWN) && (buffer_size > 100))
+				{
+					// Reset mode
+					writeSensorRegisterMAX30105(MODE_CONFIG, 0x03);
+					// Read INTERRUPT_STATUS_1 to clear Power ready status
+					readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
+					interrupt_status = deviceMAX30105State.i2cBuffer[0];
+
+					active = false;
+					buffer_pointer = 0;
+					buffer_size = 0;
+				}
+			}
+		}
 	}
 
 	return 0;

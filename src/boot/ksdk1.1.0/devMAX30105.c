@@ -19,6 +19,8 @@ extern volatile uint32_t gWarpI2cBaudRateKbps;
 extern volatile uint32_t gWarpI2cTimeoutMilliseconds;
 extern volatile uint32_t gWarpSupplySettlingDelayMilliseconds;
 
+extern const uint32_t THRESHOLD_UP;
+
 void devMAX30105init(const uint8_t i2cAddress)
 {
 	deviceMAX30105State.i2cAddress = i2cAddress;
@@ -103,7 +105,7 @@ configureSensorMAX30105()
 	i2cWriteStatus_INTERRUPT_ENABLE_1 = writeSensorRegisterMAX30105(INTERRUPT_ENABLE_1, 0x10);
 
 	// SET PROX THRESHOLD: Data ready interrupt = Off, Proximity interrupt = On
-	i2cWriteStatus_PROXIMITY_THRESHOLD = writeSensorRegisterMAX30105(PROXIMITY_THRESHOLD, 0x01);
+	i2cWriteStatus_PROXIMITY_THRESHOLD = writeSensorRegisterMAX30105(PROXIMITY_THRESHOLD, (THRESHOLD_UP >> 10));
 
 	// SET FIFO: Sample averaging = 4, FIFO rolls on full = True
 	i2cWriteStatus_FIFO_CONFIG = writeSensorRegisterMAX30105(FIFO_CONFIG, 0x50);
@@ -208,61 +210,38 @@ readSensorRegisterMAX30105(uint8_t deviceRegister, int numberOfBytes)
 	return CommStatusOK;
 }
 
-SamplingStatus readLatestSample(uint32_t *sample)
+SamplingStatus readNextSample(uint32_t *sample)
 {
 
-	// WarpStatus i2cReadStatus_FIFO_READ, i2cReadStatus_FIFO_WRITE, i2cReadStatus_FIFO_DATA;
+	CommStatus i2cReadStatus_FIFO_READ, i2cReadStatus_FIFO_WRITE, i2cReadStatus_FIFO_DATA;
 
-	// // Read READ pointer
-	// i2cReadStatus_FIFO_READ = readSensorRegisterMAX30105(FIFO_READ, 1 /* numberOfBytes */);
-	// uint8_t read_pointer = deviceMAX30105State.i2cBuffer[0];
+	// Read READ pointer
+	i2cReadStatus_FIFO_READ = readSensorRegisterMAX30105(FIFO_READ, 1 /* numberOfBytes */);
+	uint8_t read_pointer = deviceMAX30105State.i2cBuffer[0];
 
-	// // Read WRITE pointer
-	// i2cReadStatus_FIFO_WRITE = readSensorRegisterMAX30105(FIFO_WRITE, 1 /* numberOfBytes */);
-	// uint8_t write_pointer = deviceMAX30105State.i2cBuffer[0];
+	// Read WRITE pointer
+	i2cReadStatus_FIFO_WRITE = readSensorRegisterMAX30105(FIFO_WRITE, 1 /* numberOfBytes */);
+	uint8_t write_pointer = deviceMAX30105State.i2cBuffer[0];
 
-	// if (read_pointer == write_pointer)
-	// {
-	// 	return kSampleNotUpdated;
-	// }
+	if ((read_pointer == write_pointer) && (read_pointer != 0))
+	{
+		return SampleNotUpdated;
+	}
 
-	// uint8_t sample_count = write_pointer - read_pointer;
+	i2cReadStatus_FIFO_DATA = readSensorRegisterMAX30105(FIFO_DATA, 6 /* numberOfBytes */);
 
-	// if (sample_count < 0)
-	// {
-	// 	sample_count = 32;
-	// }
+	if ((i2cReadStatus_FIFO_READ | i2cReadStatus_FIFO_WRITE | i2cReadStatus_FIFO_DATA) != CommStatusOK)
+	{
+		return SamplingFailed;
+	}
 
-	// uint8_t byte_count = sample_count * 3 * 2; // 3 bytes for each of the two channels (RED and IR)
-
-	// uint8_t data[byte_count];
-
-	// i2cReadStatus_FIFO_DATA = readSensorRegisterMAX30105(FIFO_DATA, byte_count /* numberOfBytes */);
-
-	// if ((i2cReadStatus_FIFO_READ | i2cReadStatus_FIFO_WRITE | i2cReadStatus_FIFO_DATA) != kWarpStatusOK)
-	// {
-	// 	return kWarpStatusDeviceCommunicationFailed;
-	// }
-
-	// for (int i = 0; i < byte_count; i++)
-	// {
-	// 	data[i] = deviceMAX30105State.i2cBuffer[i];
-	// }
-
-	// int last_red_sample_index = byte_count - 6;
-	// int last_ir_sample_index = byte_count - 3;
-	// sample[0] = (data[last_red_sample_index] << 16) | (data[last_red_sample_index + 1] << 8) | (data[last_red_sample_index + 2]); // RED channel
-	// sample[1] = (data[last_ir_sample_index] << 16) | (data[last_ir_sample_index + 1] << 8) | (data[last_ir_sample_index + 2]);	// IR channel
-
-	CommStatus i2cReadStatus = readSensorRegisterMAX30105(FIFO_DATA, 6 /* numberOfBytes */);
 	uint8_t data[6];
 	for (int i = 0; i < 6; i++)
 	{
 		data[i] = deviceMAX30105State.i2cBuffer[i];
 	}
 
-	sample[0] = (data[0] << 16) | (data[1] << 8) | (data[2]);
-	sample[1] = (data[3] << 16) | (data[4] << 8) | (data[5]);
+	*sample = (data[3] << 16) | (data[4] << 8) | (data[5]); // IR channel
 
 	return SampleOK;
 }
