@@ -210,7 +210,7 @@ readSensorRegisterMAX30105(uint8_t deviceRegister, int numberOfBytes)
 	return CommStatusOK;
 }
 
-SamplingStatus readNextSample(uint32_t *sample)
+SamplingStatus readNextSample(uint16_t *sample)
 {
 
 	CommStatus i2cReadStatus_FIFO_READ, i2cReadStatus_FIFO_WRITE, i2cReadStatus_FIFO_DATA;
@@ -241,7 +241,7 @@ SamplingStatus readNextSample(uint32_t *sample)
 		data[i] = deviceMAX30105State.i2cBuffer[i];
 	}
 
-	*sample = (data[3] << 16) | (data[4] << 8) | (data[5]); // IR channel
+	*sample = (data[4] << 8) | (data[5]); // IR channel, discarding the two most significant bits that appear in byte data[3]
 
 	return SampleOK;
 }

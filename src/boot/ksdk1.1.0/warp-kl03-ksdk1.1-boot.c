@@ -162,7 +162,6 @@ void PORTA_IRQHandler(void)
 {
 	// Perhaps need to abstract out large code to another function due to little space in the vector table
 	PORT_HAL_ClearPortIntFlag(PORTA_BASE);
-	SEGGER_RTT_printf(0, "Interrupt detected\n", 0);
 	active = true;
 	return;
 }
@@ -241,12 +240,14 @@ int main(void)
 	active = false;
 	uint8_t interrupt_status;
 
-	uint32_t sample;
-	uint32_t buffer[256];
+	uint16_t sample;
+	uint16_t buffer[256];
 	uint8_t buffer_pointer = 0;
 	uint16_t buffer_size = 0;
+	uint16_t buffer_max;
+	uint16_t buffer_min;
 
-	int display_value = 0;
+	int8_t display_value = 0;
 
 	// Read INTERRUPT_STATUS_1 to clear Power ready status
 	readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
@@ -266,16 +267,21 @@ int main(void)
 					buffer_size++;
 				}
 
-				display_value = (sample - 315000) * 63 / 2000;
-				if (display_value > 63)
+				buffer_max = buffer[0];
+				buffer_min = buffer[0];
+				for (int i = 0; i < buffer_size; i++)
 				{
-					display_value = 63;
+					if (buffer[i] > buffer_max)
+					{
+						buffer_max = buffer[i];
+					}
+					else if (buffer[i] < buffer_min)
+					{
+						buffer_min = buffer[i];
+					}
 				}
-				else if (display_value < 0)
-				{
-					display_value = 0;
-				}
-				SEGGER_RTT_printf(0, "Value: %u\n", display_value);
+				display_value = (sample - buffer_min) * 63 / (buffer_max - buffer_min);
+				SEGGER_RTT_printf(0, "Sample: %u	\n", sample);
 
 				if ((sample < THRESHOLD_DOWN) && (buffer_size > 100))
 				{

@@ -7,4 +7,4 @@ CommStatus configureSensorMAX30105();
 
 CommStatus readSensorRegisterMAX30105(uint8_t deviceRegister, int numberOfBytes);
 
-CommStatus readNextSample(uint32_t * sample);
+CommStatus readNextSample(uint16_t *sample);
