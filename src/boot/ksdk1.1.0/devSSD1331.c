@@ -46,6 +46,28 @@ writeCommand(uint8_t commandByte)
 	return status;
 }
 
+void clearScreen(void)
+{
+	writeCommand(kSSD1331CommandCLEAR);
+	writeCommand(0x00);
+	writeCommand(0x00);
+	writeCommand(0x5F);
+	writeCommand(0x3F);
+	return;
+}
+
+void traceLine(uint8_t column, uint8_t prev, uint8_t next)
+{
+	writeCommand(kSSD1331CommandDRAWLINE);
+	writeCommand(column);	// Column start address
+	writeCommand(63 - prev); // Row start address (63 - because display is upside down)
+	writeCommand(column);	// Column end address
+	writeCommand(63 - next); // Row end address (63 - because display is upside down)
+	writeCommand(0xFF);		 // Red
+	writeCommand(0x00);		 // Green
+	writeCommand(0x00);		 // Blue
+}
+
 int devSSD1331init(void)
 {
 	/*
@@ -112,30 +134,23 @@ int devSSD1331init(void)
 	writeCommand(kSSD1331CommandFILL);
 	writeCommand(0x01);
 
-	/*
-	 *	Clear Screen
-	 */
-	writeCommand(kSSD1331CommandCLEAR);
-	writeCommand(0x00);
-	writeCommand(0x00);
-	writeCommand(0x5F);
-	writeCommand(0x3F);
+	clearScreen();
 
 	/*
 	 *	Any post-initialization drawing commands go here.
 	 */
 	//...
-	writeCommand(kSSD1331CommandDRAWRECT);
-	writeCommand(0);	// Col start
-	writeCommand(0);	// Row start
-	writeCommand(95);   // Col end
-	writeCommand(63);   // Row end
-	writeCommand(0x00); // Line red
-	writeCommand(0xFF); // Line green
-	writeCommand(0x00); // Line blue
-	writeCommand(0x00); // Fill red
-	writeCommand(0xFF); // Fill green
-	writeCommand(0x00); // Fill blue
+	// writeCommand(kSSD1331CommandDRAWRECT);
+	// writeCommand(0);	// Col start
+	// writeCommand(0);	// Row start
+	// writeCommand(95);   // Col end
+	// writeCommand(63);   // Row end
+	// writeCommand(0x00); // Line red
+	// writeCommand(0xFF); // Line green
+	// writeCommand(0x00); // Line blue
+	// writeCommand(0x00); // Fill red
+	// writeCommand(0xFF); // Fill green
+	// writeCommand(0x00); // Fill blue
 
 	return 0;
 }

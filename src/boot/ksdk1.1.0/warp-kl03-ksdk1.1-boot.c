@@ -247,7 +247,9 @@ int main(void)
 	uint16_t buffer_max;
 	uint16_t buffer_min;
 
+	int8_t previous_display_value = 0;
 	int8_t display_value = 0;
+	int8_t display_count = 0;
 
 	// Read INTERRUPT_STATUS_1 to clear Power ready status
 	readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
@@ -260,6 +262,22 @@ int main(void)
 			SamplingStatus readStatus = readNextSample(&sample);
 			if (readStatus == SampleOK)
 			{
+				// Check if finger has been removed
+				if ((sample < THRESHOLD_DOWN) && (buffer_size > 0))
+				{
+					// Reset mode
+					writeSensorRegisterMAX30105(MODE_CONFIG, 0x03);
+					// Read INTERRUPT_STATUS_1 to clear Power ready status
+					readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
+					interrupt_status = deviceMAX30105State.i2cBuffer[0];
+
+					active = false;
+					buffer_pointer = 0;
+					buffer_size = 0;
+					break;
+				}
+
+				// Write sample to buffer
 				buffer[buffer_pointer] = sample;
 				buffer_pointer++;
 				if (buffer_size < 256)
@@ -267,6 +285,7 @@ int main(void)
 					buffer_size++;
 				}
 
+				// Calculate normalised display value
 				buffer_max = buffer[0];
 				buffer_min = buffer[0];
 				for (int i = 0; i < buffer_size; i++)
@@ -280,21 +299,19 @@ int main(void)
 						buffer_min = buffer[i];
 					}
 				}
+				previous_display_value = display_value;
 				display_value = (sample - buffer_min) * 63 / (buffer_max - buffer_min);
-				SEGGER_RTT_printf(0, "Sample: %u	\n", sample);
 
-				if ((sample < THRESHOLD_DOWN) && (buffer_size > 100))
+				// Write to display
+				if (display_count > 95)
 				{
-					// Reset mode
-					writeSensorRegisterMAX30105(MODE_CONFIG, 0x03);
-					// Read INTERRUPT_STATUS_1 to clear Power ready status
-					readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
-					interrupt_status = deviceMAX30105State.i2cBuffer[0];
-
-					active = false;
-					buffer_pointer = 0;
-					buffer_size = 0;
+					clearScreen();
+					display_count = 0;
 				}
+				traceLine(display_count, previous_display_value, display_value);
+				display_count++;
+
+				SEGGER_RTT_printf(0, "Sample: %u	Min: %u		Max: %u		Display value: %u\n", sample, buffer_min, buffer_max, display_value);
 			}
 		}
 	}
