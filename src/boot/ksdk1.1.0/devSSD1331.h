@@ -42,6 +42,10 @@ typedef enum
 	kSSD1331CommandVCOMH = 0xBE,
 } SSD1331Commands;
 
+void clearSection(uint8_t col_start, uint8_t row_start, uint8_t col_end, uint8_t row_end);
+
+void clearTraceArea(void);
+
 void clearScreen(void);
 
 void traceLine(uint8_t column, uint8_t prev, uint8_t next);

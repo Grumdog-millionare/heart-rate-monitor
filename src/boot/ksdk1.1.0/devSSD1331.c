@@ -46,14 +46,24 @@ writeCommand(uint8_t commandByte)
 	return status;
 }
 
-void clearScreen(void)
+void clearSection(uint8_t col_start, uint8_t row_start, uint8_t col_end, uint8_t row_end)
 {
 	writeCommand(kSSD1331CommandCLEAR);
-	writeCommand(0x00);
-	writeCommand(0x00);
-	writeCommand(0x5F);
-	writeCommand(0x3F);
+	writeCommand(col_start); // Column start address
+	writeCommand(row_start); // Row start address
+	writeCommand(col_end);   // Column end address
+	writeCommand(row_end);   // Row end address
 	return;
+}
+
+void clearTraceArea()
+{
+	clearSection(0, 11, 95, 63);
+}
+
+void clearScreen()
+{
+	clearSection(0, 0, 95, 63);
 }
 
 void traceLine(uint8_t column, uint8_t prev, uint8_t next)
@@ -430,22 +440,6 @@ int devSSD1331init(void)
 	writeCommand(0x01);
 
 	clearScreen();
-
-	/*
-	 *	Any post-initialization drawing commands go here.
-	 */
-	//...
-	// writeCommand(kSSD1331CommandDRAWRECT);
-	// writeCommand(0);	// Col start
-	// writeCommand(0);	// Row start
-	// writeCommand(95);   // Col end
-	// writeCommand(63);   // Row end
-	// writeCommand(0x00); // Line red
-	// writeCommand(0xFF); // Line green
-	// writeCommand(0x00); // Line blue
-	// writeCommand(0x00); // Fill red
-	// writeCommand(0xFF); // Fill green
-	// writeCommand(0x00); // Fill blue
 
 	return 0;
 }

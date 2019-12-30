@@ -93,7 +93,8 @@ int8_t previous_display_value = 0;
 int8_t display_value = 0;
 int8_t display_count = 0;
 
-uint8_t temperature;
+uint8_t previous_temperature = 0;
+uint8_t temperature = 1;
 
 void enableSPIpins(void)
 {
@@ -198,6 +199,8 @@ void reset(void)
 	buffer_size = 0;
 	filtered_buffer_pointer = 0;
 	filtered_buffer_size = 0;
+	previous_temperature = 0;
+	temperature = 1; // temperature != previous_temperature so screen updates
 	return;
 }
 
@@ -236,18 +239,19 @@ uint8_t getNormalisedValue(uint16_t filtered_sample, uint16_t *filtered_buffer)
 void readTemp(void)
 {
 	readSensorRegisterMAX30105(TEMP_INT, 1);
+	previous_temperature = temperature;
 	temperature = deviceMAX30105State.i2cBuffer[0];
 	return;
 }
 
-void displayTemp(void)
+void displayTemp(uint8_t temp)
 {
 	writeCharacter(91, 63, 'o');
 	int i = 85;
-	while (temperature)
+	while (temp)
 	{
-		writeDigit(i, 63, temperature % 10);
-		temperature /= 10;
+		writeDigit(i, 63, temp % 10);
+		temp /= 10;
 		i -= 6;
 	}
 }
@@ -256,10 +260,14 @@ void writeToDisplay(void)
 {
 	if (display_count > 95)
 	{
-		clearScreen();
+		clearTraceArea();
 		display_count = 0;
 		readTemp();
-		displayTemp();
+		if (temperature != previous_temperature)
+		{
+			clearSection(79, 0, 95, 8);
+			displayTemp(temperature);
+		}
 	}
 	traceLine(display_count, previous_display_value, display_value);
 	display_count++;
