@@ -349,7 +349,7 @@ void writeDigit(uint8_t column, uint8_t row, uint8_t digit)
 	return;
 }
 
-// Writes a character symbol in a 5x9 shaped box starting at the top left (except . which is 3x9)
+// Writes a character symbol in a varying sized box
 void writeCharacter(uint8_t column, uint8_t row, char character)
 {
 	row = 63 - row; // Screen is upside down
@@ -368,6 +368,31 @@ void writeCharacter(uint8_t column, uint8_t row, char character)
 		writeCommand(0x00);		  // Fill red
 		writeCommand(0x00);		  // Fill green
 		writeCommand(0x00);		  // Fill blue
+
+		break;
+	}
+	case 'C':
+	{
+		for (int i = 0; i < 9; i += 8)
+		{
+			writeCommand(kSSD1331CommandDRAWLINE);
+			writeCommand(column);	 // Column start address
+			writeCommand(row + i);	// Row start address
+			writeCommand(column + 4); // Column end address
+			writeCommand(row + i);	// Row end address
+			writeCommand(0xFF);		  // Red
+			writeCommand(0xFF);		  // Green
+			writeCommand(0xFF);		  // Blue
+		}
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column);  // Column start address
+		writeCommand(row);	 // Row start address
+		writeCommand(column);  // Column end address
+		writeCommand(row + 8); // Row end address
+		writeCommand(0xFF);	// Red
+		writeCommand(0xFF);	// Green
+		writeCommand(0xFF);	// Blue
 
 		break;
 	}
@@ -414,7 +439,7 @@ void writeCharacter(uint8_t column, uint8_t row, char character)
 		writeCommand(column);   // Column start address
 		writeCommand(row + 8);  // Row start address
 		writeCommand(column);   // Column end address
-		writeCommand(row + 12); // Row end address
+		writeCommand(row + 11); // Row end address
 		writeCommand(0xFF);		// Red
 		writeCommand(0xFF);		// Green
 		writeCommand(0xFF);		// Blue
@@ -477,6 +502,18 @@ void writeCharacter(uint8_t column, uint8_t row, char character)
 		writeCommand(0xFF);		  // Fill red
 		writeCommand(0xFF);		  // Fill green
 		writeCommand(0xFF);		  // Fill blue
+		break;
+	}
+	case '-':
+	{
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column);	 // Column start address
+		writeCommand(row + 4);	// Row start address
+		writeCommand(column + 4); // Column end address
+		writeCommand(row + 4);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
 		break;
 	}
 	}

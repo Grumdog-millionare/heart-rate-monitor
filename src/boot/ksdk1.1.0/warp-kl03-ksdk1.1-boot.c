@@ -260,8 +260,10 @@ void readTemp(void)
 
 void displayTemp(uint8_t temp)
 {
-	writeCharacter(91, 63, 'o');
-	int i = 85;
+	writeCharacter(86, 63, 'o');
+	writeCharacter(91, 63, 'C');
+
+	int i = 78;
 	while (temp)
 	{
 		writeDigit(i, 63, temp % 10);
@@ -272,20 +274,32 @@ void displayTemp(uint8_t temp)
 
 void displayBPM(uint16_t bpm)
 {
-	writeCharacter(32, 63, 'b');
-	writeCharacter(38, 63, 'p');
-	writeCharacter(44, 63, 'm');
+	writeCharacter(30, 63, 'b');
+	writeCharacter(36, 63, 'p');
+	writeCharacter(42, 63, 'm');
 
-	writeDigit(22, 63, bpm % 10);
-	writeCharacter(18, 63, '.');
-	bpm /= 10;
-	int i = 12;
-	while (bpm)
+	if ((bpm < 200) | (bpm > 4000)) // Extreme values
 	{
-		writeDigit(i, 63, bpm % 10);
-		bpm /= 10;
-		i -= 6;
+		writeCharacter(0, 63, '-');
+		writeCharacter(6, 63, '-');
+		writeCharacter(12, 63, '-');
+		writeCharacter(18, 63, '.');
+		writeCharacter(22, 63, '-');
 	}
+	else
+	{
+		writeDigit(22, 63, bpm % 10);
+		writeCharacter(18, 63, '.');
+		bpm /= 10;
+		int i = 12;
+		while (bpm)
+		{
+			writeDigit(i, 63, bpm % 10);
+			bpm /= 10;
+			i -= 6;
+		}
+	}
+	return;
 }
 
 void writeToDisplay(uint8_t previous_value, uint8_t next_value)
@@ -297,7 +311,7 @@ void writeToDisplay(uint8_t previous_value, uint8_t next_value)
 		readTemp();
 		if (temperature != previous_temperature)
 		{
-			clearSection(79, 0, 95, 8);
+			clearSection(72, 0, 90, 8);
 			displayTemp(temperature);
 		}
 		if (bpm != previous_bpm)
