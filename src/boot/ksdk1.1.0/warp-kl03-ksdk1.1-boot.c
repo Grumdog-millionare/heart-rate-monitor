@@ -89,12 +89,17 @@ uint32_t filtered_buffer_mean;
 int16_t filtered_buffer_max;
 int16_t filtered_buffer_min;
 
-int8_t previous_display_value = 0;
-int8_t display_value = 0;
+uint8_t normalised_buffer_pointer = 0;
+int16_t previous_derivative = 0;
+int16_t derivative = 0;
+uint16_t samples_since_beat = 0;
+
 int8_t display_count = 0;
 
 uint8_t previous_temperature = 0;
 uint8_t temperature = 1;
+uint16_t previous_bpm = 0;
+uint16_t bpm = 1;
 
 void enableSPIpins(void)
 {
@@ -242,7 +247,7 @@ uint8_t getNormalisedValue(int16_t filtered_sample, int16_t *filtered_buffer)
 		}
 	}
 	filtered_buffer_mean /= filtered_buffer_size;
-	return (filtered_sample - filtered_buffer_min) * 52 / (filtered_buffer_max - filtered_buffer_min);
+	return (filtered_sample - filtered_buffer_min) * 50 / (filtered_buffer_max - filtered_buffer_min);
 }
 
 void readTemp(void)
@@ -265,7 +270,25 @@ void displayTemp(uint8_t temp)
 	}
 }
 
-void writeToDisplay(void)
+void displayBPM(uint16_t bpm)
+{
+	writeCharacter(32, 63, 'b');
+	writeCharacter(38, 63, 'p');
+	writeCharacter(44, 63, 'm');
+
+	writeDigit(22, 63, bpm % 10);
+	writeCharacter(18, 63, '.');
+	bpm /= 10;
+	int i = 12;
+	while (bpm)
+	{
+		writeDigit(i, 63, bpm % 10);
+		bpm /= 10;
+		i -= 6;
+	}
+}
+
+void writeToDisplay(uint8_t previous_value, uint8_t next_value)
 {
 	if (display_count > 95)
 	{
@@ -277,8 +300,13 @@ void writeToDisplay(void)
 			clearSection(79, 0, 95, 8);
 			displayTemp(temperature);
 		}
+		if (bpm != previous_bpm)
+		{
+			clearSection(0, 0, 28, 8);
+			displayBPM(bpm);
+		}
 	}
-	traceLine(display_count, previous_display_value, display_value);
+	traceLine(display_count, previous_value, next_value);
 	display_count++;
 	return;
 }
@@ -355,6 +383,7 @@ int main(void)
 	uint16_t buffer[32];
 	int16_t filtered_sample;
 	int16_t filtered_buffer[256];
+	uint8_t normalised_buffer[4];
 
 	clearPowerReadyStatus();
 
@@ -388,9 +417,19 @@ int main(void)
 						filtered_buffer_size++;
 					}
 
-					// Calculate normalised display value
-					previous_display_value = display_value;
-					display_value = getNormalisedValue(filtered_sample, filtered_buffer);
+					// Calculate normalised value
+					normalised_buffer[normalised_buffer_pointer] = getNormalisedValue(filtered_sample, filtered_buffer);
+
+					// Check for beat
+					previous_derivative = derivative;
+					derivative = normalised_buffer[normalised_buffer_pointer] - normalised_buffer[(normalised_buffer_pointer - 2) & 0x03]; // Calculates derivative at previous sample
+
+					if ((previous_derivative < 0) & (derivative >= 0) & (normalised_buffer[(normalised_buffer_pointer - 1) & 0x03] < 15))
+					{
+						bpm = 60000 / samples_since_beat; // The least significant digit has order 0.1
+						samples_since_beat = 0;
+					}
+					samples_since_beat++;
 
 					// Request a temperature reading every 96 samples, 0.5 seconds before reading it
 					if (display_count == 46)
@@ -398,8 +437,9 @@ int main(void)
 						writeSensorRegisterMAX30105(TEMP_CONFIG, 0x01);
 					}
 
-					// Write to display
-					writeToDisplay();
+					// Write to display and increment normalised buffer pointer
+					writeToDisplay(normalised_buffer[(normalised_buffer_pointer - 1) & 0x03], normalised_buffer[normalised_buffer_pointer]);
+					normalised_buffer_pointer = (normalised_buffer_pointer + 1) & 0x03; // Increment normliased buffer pointer, modulo 4
 				}
 				else
 				{
