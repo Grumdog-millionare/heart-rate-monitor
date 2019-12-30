@@ -70,9 +70,9 @@ void traceLine(uint8_t column, uint8_t prev, uint8_t next)
 {
 	writeCommand(kSSD1331CommandDRAWLINE);
 	writeCommand(column);	// Column start address
-	writeCommand(63 - prev); // Row start address (63 - because display is upside down)
+	writeCommand(11 + prev); // Row start address (should be 63 - because display is upside down, but plot mirrored, and 11 + for heading bar)
 	writeCommand(column);	// Column end address
-	writeCommand(63 - next); // Row end address (63 - because display is upside down)
+	writeCommand(11 + next); // Row end address (should be 63 - because display is upside down, but plot mirrored, and 11 + for heading bar)
 	writeCommand(0xFF);		 // Red
 	writeCommand(0x00);		 // Green
 	writeCommand(0x00);		 // Blue

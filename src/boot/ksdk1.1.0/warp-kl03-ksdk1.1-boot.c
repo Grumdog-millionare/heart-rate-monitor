@@ -86,8 +86,8 @@ uint8_t buffer_size = 0;
 uint8_t filtered_buffer_pointer = 0;
 uint16_t filtered_buffer_size = 0;
 uint32_t filtered_buffer_mean;
-uint16_t filtered_buffer_max;
-uint16_t filtered_buffer_min;
+int16_t filtered_buffer_max;
+int16_t filtered_buffer_min;
 
 int8_t previous_display_value = 0;
 int8_t display_value = 0;
@@ -204,17 +204,26 @@ void reset(void)
 	return;
 }
 
-uint16_t lowPassFilter(uint16_t *buffer)
+int16_t bandPassFilter(uint16_t *buffer)
 {
 	uint64_t f = FIR_COEFFS[11] * buffer[(buffer_pointer - 11) & 0x1F];
 	for (int i = 0; i < 11; i++)
 	{
 		f += FIR_COEFFS[i] * (buffer[(buffer_pointer - 21 + i) & 0x1F] + buffer[(buffer_pointer - i) & 0x1F]);
 	}
-	return f >> 16;
+	f /= 47484;
+
+	uint64_t g = 0;
+	for (int i = 0; i < buffer_size; i++)
+	{
+		g += buffer[i];
+	}
+	g = (g / buffer_size);
+
+	return f - g;
 }
 
-uint8_t getNormalisedValue(uint16_t filtered_sample, uint16_t *filtered_buffer)
+uint8_t getNormalisedValue(int16_t filtered_sample, int16_t *filtered_buffer)
 {
 	filtered_buffer_mean = 0;
 	filtered_buffer_max = filtered_buffer[0];
@@ -344,8 +353,8 @@ int main(void)
 	// Initialise data buffers
 	uint16_t sample;
 	uint16_t buffer[32];
-	uint16_t filtered_sample;
-	uint16_t filtered_buffer[256];
+	int16_t filtered_sample;
+	int16_t filtered_buffer[256];
 
 	clearPowerReadyStatus();
 
@@ -369,7 +378,7 @@ int main(void)
 				// If buffer is full, filter and trace the signal
 				if (buffer_size == 32)
 				{
-					filtered_sample = lowPassFilter(buffer);
+					filtered_sample = bandPassFilter(buffer);
 
 					// Write filtered sample to filtered buffer
 					filtered_buffer[filtered_buffer_pointer] = filtered_sample;
