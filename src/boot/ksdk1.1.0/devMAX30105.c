@@ -107,8 +107,8 @@ configureSensorMAX30105()
 	// SET PROX THRESHOLD: Data ready interrupt = Off, Proximity interrupt = On
 	i2cWriteStatus_PROXIMITY_THRESHOLD = writeSensorRegisterMAX30105(PROXIMITY_THRESHOLD, (THRESHOLD_UP >> 10));
 
-	// SET FIFO: Sample averaging = 8, FIFO rolls on full = True
-	i2cWriteStatus_FIFO_CONFIG = writeSensorRegisterMAX30105(FIFO_CONFIG, 0x70);
+	// SET FIFO: Sample averaging = 4, FIFO rolls on full = True
+	i2cWriteStatus_FIFO_CONFIG = writeSensorRegisterMAX30105(FIFO_CONFIG, 0x50);
 
 	// SET SPO2: ADC range = 16384, Sample rate = 400 Hz, Pulse width = 215 us
 	i2cWriteStatus_SPO2_CONFIG = writeSensorRegisterMAX30105(SPO2_CONFIG, 0x6E);
@@ -223,7 +223,7 @@ SamplingStatus readNextSample(uint16_t *sample)
 	i2cReadStatus_FIFO_WRITE = readSensorRegisterMAX30105(FIFO_WRITE, 1 /* numberOfBytes */);
 	uint8_t write_pointer = deviceMAX30105State.i2cBuffer[0];
 
-	if ((read_pointer == write_pointer) && (read_pointer != 0))
+	if ((read_pointer == write_pointer))
 	{
 		return SampleNotUpdated;
 	}

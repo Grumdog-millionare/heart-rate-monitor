@@ -82,7 +82,7 @@ volatile uint32_t gWarpSupplySettlingDelayMilliseconds = 1;
 
 // CONSTANTS
 const uint32_t THRESHOLD_UP = 1024;
-const uint32_t THRESHOLD_DOWN = 200;
+const uint32_t THRESHOLD_DOWN = 2000;
 
 // GLOBAL VARIABLES
 volatile bool active;
@@ -241,15 +241,23 @@ int main(void)
 	uint8_t interrupt_status;
 
 	uint16_t sample;
-	uint16_t buffer[256];
+	uint16_t buffer[32];
 	uint8_t buffer_pointer = 0;
-	uint16_t buffer_size = 0;
-	uint16_t buffer_max;
-	uint16_t buffer_min;
+	uint8_t buffer_size = 0;
+
+	uint64_t filtered_sample;
+	uint16_t filtered_buffer[256];
+	uint8_t filtered_buffer_pointer = 0;
+	uint16_t filtered_buffer_size = 0;
+	uint32_t filtered_buffer_mean;
+	uint16_t filtered_buffer_max;
+	uint16_t filtered_buffer_min;
 
 	int8_t previous_display_value = 0;
 	int8_t display_value = 0;
 	int8_t display_count = 0;
+
+	uint16_t fir_coeffs[12] = {172, 321, 579, 927, 1360, 1858, 2390, 2916, 3391, 3768, 4012, 4096};
 
 	// Read INTERRUPT_STATUS_1 to clear Power ready status
 	readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
@@ -262,59 +270,109 @@ int main(void)
 			SamplingStatus readStatus = readNextSample(&sample);
 			if (readStatus == SampleOK)
 			{
+				//SEGGER_RTT_printf(0, "Sample: %u\n", sample);
 				// Check if finger has been removed
-				if ((sample < THRESHOLD_DOWN) && (buffer_size > 0))
+				if ((sample < THRESHOLD_DOWN))
 				{
 					// Reset mode
 					writeSensorRegisterMAX30105(MODE_CONFIG, 0x03);
 					// Read INTERRUPT_STATUS_1 to clear Power ready status
 					readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
 					interrupt_status = deviceMAX30105State.i2cBuffer[0];
+					// Clear screen
+					clearScreen();
+					display_count = 0;
 
 					active = false;
 					buffer_pointer = 0;
 					buffer_size = 0;
+					filtered_buffer_pointer = 0;
+					filtered_buffer_size = 0;
 					break;
 				}
 
 				// Write sample to buffer
 				buffer[buffer_pointer] = sample;
-				buffer_pointer++;
-				if (buffer_size < 256)
+
+				if (buffer_size < 32)
 				{
 					buffer_size++;
+					//SEGGER_RTT_printf(0, "Buffer being filled\n", 0);
 				}
-
-				// Calculate normalised display value
-				buffer_max = buffer[0];
-				buffer_min = buffer[0];
-				for (int i = 0; i < buffer_size; i++)
+				else
 				{
-					if (buffer[i] > buffer_max)
+					// Low pass filter
+					filtered_sample = fir_coeffs[11] * buffer[(buffer_pointer - 11) & 0x1F];
+					// SEGGER_RTT_printf(0, "Pointer: %u	Middle pointer: %u\n", buffer_pointer, (buffer_pointer - 11) & 0x1F);
+					for (int i = 0; i < 11; i++)
 					{
-						buffer_max = buffer[i];
+						filtered_sample += fir_coeffs[i] * (buffer[(buffer_pointer - 21 + i) & 0x1F] + buffer[(buffer_pointer - i) & 0x1F]);
 					}
-					else if (buffer[i] < buffer_min)
-					{
-						buffer_min = buffer[i];
-					}
-				}
-				previous_display_value = display_value;
-				display_value = (sample - buffer_min) * 63 / (buffer_max - buffer_min);
+					filtered_sample = filtered_sample >> 16;
 
-				// Write to display
-				if (display_count > 95)
+					// Write filtered sample to filtered buffer
+					filtered_buffer[filtered_buffer_pointer] = filtered_sample;
+					filtered_buffer_pointer++;
+					if (filtered_buffer_size < 256)
+					{
+						filtered_buffer_size++;
+					}
+
+					// Calculate normalised display value
+					filtered_buffer_mean = 0;
+					filtered_buffer_max = filtered_buffer[0];
+					filtered_buffer_min = filtered_buffer[0];
+
+					for (int i = 0; i < filtered_buffer_size; i++)
+					{
+						filtered_buffer_mean += filtered_buffer[i];
+						if (filtered_buffer[i] > filtered_buffer_max)
+						{
+							filtered_buffer_max = filtered_buffer[i];
+						}
+						else if (filtered_buffer[i] < filtered_buffer_min)
+						{
+							filtered_buffer_min = filtered_buffer[i];
+						}
+					}
+					filtered_buffer_mean /= filtered_buffer_size;
+					SEGGER_RTT_printf(0, "Filtered sample: %u\t", filtered_sample);
+					//SEGGER_RTT_printf(0, "Filtered buffer mean: %u\t", filtered_buffer_mean);
+					SEGGER_RTT_printf(0, "Max: %u\t", filtered_buffer_max);
+					SEGGER_RTT_printf(0, "Min: %u\t", filtered_buffer_min);
+					SEGGER_RTT_printf(0, "Filtered buffer size: %u\n", filtered_buffer_size);
+
+					previous_display_value = display_value;
+					display_value = (filtered_sample - filtered_buffer_min) * 63 / (filtered_buffer_max - filtered_buffer_min); //(filtered_sample - filtered_buffer_mean) * 63 / 200;
+					// if (display_value < 0)
+					// {
+					// 	display_value = 0;
+					// }
+					// else if (display_value > 63)
+					// {
+					// 	display_value = 63;
+					// }
+
+					// Write to display
+					if (display_count > 95)
+					{
+						clearScreen();
+						display_count = 0;
+					}
+					traceLine(display_count, previous_display_value, display_value);
+					display_count++;
+				}
+
+				if (buffer_pointer < 31)
 				{
-					clearScreen();
-					display_count = 0;
+					buffer_pointer++;
 				}
-				traceLine(display_count, previous_display_value, display_value);
-				display_count++;
-
-				SEGGER_RTT_printf(0, "Sample: %u	Min: %u		Max: %u		Display value: %u\n", sample, buffer_min, buffer_max, display_value);
+				else
+				{
+					buffer_pointer = 0;
+				}
 			}
 		}
 	}
-
 	return 0;
 }
