@@ -61,10 +61,6 @@
 
 #define WARP_BUILD_ENABLE_SEGGER_RTT_PRINTF
 
-#define kWarpConstantStringI2cFailure "\rI2C failed, reg 0x%02x, code %d\n"
-#define kWarpConstantStringErrorInvalidVoltage "\rInvalid supply voltage [%d] mV!"
-#define kWarpConstantStringErrorSanity "\rSanity check failed!"
-
 volatile WarpI2CDeviceState deviceMAX30105State;
 
 volatile i2c_master_state_t i2cMasterState;
@@ -72,20 +68,30 @@ volatile spi_master_state_t spiMasterState;
 volatile spi_master_user_config_t spiUserConfig;
 
 volatile uint32_t gWarpI2cBaudRateKbps = 200;
-volatile uint32_t gWarpUartBaudRateKbps = 1;
 volatile uint32_t gWarpSpiBaudRateKbps = 200;
-volatile uint32_t gWarpSleeptimeSeconds = 0;
 volatile uint32_t gWarpI2cTimeoutMilliseconds = 5;
 volatile uint32_t gWarpSpiTimeoutMicroseconds = 5;
-volatile uint32_t gWarpMenuPrintDelayMilliseconds = 10;
-volatile uint32_t gWarpSupplySettlingDelayMilliseconds = 1;
 
 // CONSTANTS
 const uint32_t THRESHOLD_UP = 1024;
 const uint32_t THRESHOLD_DOWN = 2000;
+const uint16_t FIR_COEFFS[12] = {172, 321, 579, 927, 1360, 1858, 2390, 2916, 3391, 3768, 4012, 4096};
 
 // GLOBAL VARIABLES
-volatile bool active;
+volatile bool active = false;
+
+uint8_t buffer_pointer = 0;
+uint8_t buffer_size = 0;
+
+uint8_t filtered_buffer_pointer = 0;
+uint16_t filtered_buffer_size = 0;
+uint32_t filtered_buffer_mean;
+uint16_t filtered_buffer_max;
+uint16_t filtered_buffer_min;
+
+int8_t previous_display_value = 0;
+int8_t display_value = 0;
+int8_t display_count = 0;
 
 void enableSPIpins(void)
 {
@@ -166,6 +172,77 @@ void PORTA_IRQHandler(void)
 	return;
 }
 
+void clearPowerReadyStatus(void)
+{
+	// Read INTERRUPT_STATUS_1 to clear the Power ready interrupt
+	readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
+	deviceMAX30105State.i2cBuffer[0];
+	return;
+}
+
+void reset(void)
+{
+	// Reset mode
+	writeSensorRegisterMAX30105(MODE_CONFIG, 0x03);
+	clearPowerReadyStatus();
+
+	// Clear screen
+	clearScreen();
+	display_count = 0;
+
+	// Reset variables
+	active = false;
+	buffer_pointer = 0;
+	buffer_size = 0;
+	filtered_buffer_pointer = 0;
+	filtered_buffer_size = 0;
+	return;
+}
+
+uint16_t lowPassFilter(uint16_t *buffer)
+{
+	uint64_t f = FIR_COEFFS[11] * buffer[(buffer_pointer - 11) & 0x1F];
+	for (int i = 0; i < 11; i++)
+	{
+		f += FIR_COEFFS[i] * (buffer[(buffer_pointer - 21 + i) & 0x1F] + buffer[(buffer_pointer - i) & 0x1F]);
+	}
+	return f >> 16;
+}
+
+uint8_t getNormalisedValue(uint16_t filtered_sample, uint16_t *filtered_buffer)
+{
+	filtered_buffer_mean = 0;
+	filtered_buffer_max = filtered_buffer[0];
+	filtered_buffer_min = filtered_buffer[0];
+
+	for (int i = 0; i < filtered_buffer_size; i++)
+	{
+		filtered_buffer_mean += filtered_buffer[i];
+		if (filtered_buffer[i] > filtered_buffer_max)
+		{
+			filtered_buffer_max = filtered_buffer[i];
+		}
+		else if (filtered_buffer[i] < filtered_buffer_min)
+		{
+			filtered_buffer_min = filtered_buffer[i];
+		}
+	}
+	filtered_buffer_mean /= filtered_buffer_size;
+	return (filtered_sample - filtered_buffer_min) * 63 / (filtered_buffer_max - filtered_buffer_min);
+}
+
+void writeToDisplay(void)
+{
+	if (display_count > 95)
+	{
+		clearScreen();
+		display_count = 0;
+	}
+	traceLine(display_count, previous_display_value, display_value);
+	display_count++;
+	return;
+}
+
 int main(void)
 {
 	/*
@@ -229,39 +306,17 @@ int main(void)
 	enableSPIpins();
 	enableI2Cpins(32768);
 
-	// Initialize all devices
+	// Initialise and configure all devices
 	devSSD1331init();
 	devMAX30105init(0x57 /* i2cAddress */);
 
-	// Configure MAX30105
-	configureSensorMAX30105();
-
-	// Variables
-	active = false;
-	uint8_t interrupt_status;
-
+	// Initialise data buffers
 	uint16_t sample;
 	uint16_t buffer[32];
-	uint8_t buffer_pointer = 0;
-	uint8_t buffer_size = 0;
-
-	uint64_t filtered_sample;
+	uint16_t filtered_sample;
 	uint16_t filtered_buffer[256];
-	uint8_t filtered_buffer_pointer = 0;
-	uint16_t filtered_buffer_size = 0;
-	uint32_t filtered_buffer_mean;
-	uint16_t filtered_buffer_max;
-	uint16_t filtered_buffer_min;
 
-	int8_t previous_display_value = 0;
-	int8_t display_value = 0;
-	int8_t display_count = 0;
-
-	uint16_t fir_coeffs[12] = {172, 321, 579, 927, 1360, 1858, 2390, 2916, 3391, 3768, 4012, 4096};
-
-	// Read INTERRUPT_STATUS_1 to clear Power ready status
-	readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
-	interrupt_status = deviceMAX30105State.i2cBuffer[0];
+	clearPowerReadyStatus();
 
 	while (1)
 	{
@@ -270,107 +325,41 @@ int main(void)
 			SamplingStatus readStatus = readNextSample(&sample);
 			if (readStatus == SampleOK)
 			{
-				//SEGGER_RTT_printf(0, "Sample: %u\n", sample);
 				// Check if finger has been removed
 				if ((sample < THRESHOLD_DOWN))
 				{
-					// Reset mode
-					writeSensorRegisterMAX30105(MODE_CONFIG, 0x03);
-					// Read INTERRUPT_STATUS_1 to clear Power ready status
-					readSensorRegisterMAX30105(INTERRUPT_STATUS_1, 1);
-					interrupt_status = deviceMAX30105State.i2cBuffer[0];
-					// Clear screen
-					clearScreen();
-					display_count = 0;
-
-					active = false;
-					buffer_pointer = 0;
-					buffer_size = 0;
-					filtered_buffer_pointer = 0;
-					filtered_buffer_size = 0;
+					reset();
 					break;
 				}
 
 				// Write sample to buffer
 				buffer[buffer_pointer] = sample;
 
-				if (buffer_size < 32)
+				// If buffer is full, filter and trace the signal
+				if (buffer_size == 32)
 				{
-					buffer_size++;
-					//SEGGER_RTT_printf(0, "Buffer being filled\n", 0);
-				}
-				else
-				{
-					// Low pass filter
-					filtered_sample = fir_coeffs[11] * buffer[(buffer_pointer - 11) & 0x1F];
-					// SEGGER_RTT_printf(0, "Pointer: %u	Middle pointer: %u\n", buffer_pointer, (buffer_pointer - 11) & 0x1F);
-					for (int i = 0; i < 11; i++)
-					{
-						filtered_sample += fir_coeffs[i] * (buffer[(buffer_pointer - 21 + i) & 0x1F] + buffer[(buffer_pointer - i) & 0x1F]);
-					}
-					filtered_sample = filtered_sample >> 16;
+					filtered_sample = lowPassFilter(buffer);
 
 					// Write filtered sample to filtered buffer
 					filtered_buffer[filtered_buffer_pointer] = filtered_sample;
-					filtered_buffer_pointer++;
+					filtered_buffer_pointer++; // Increment filtered buffer pointer. No need to modulo as the 8 bit pointer overflows at 256.
 					if (filtered_buffer_size < 256)
 					{
 						filtered_buffer_size++;
 					}
 
 					// Calculate normalised display value
-					filtered_buffer_mean = 0;
-					filtered_buffer_max = filtered_buffer[0];
-					filtered_buffer_min = filtered_buffer[0];
-
-					for (int i = 0; i < filtered_buffer_size; i++)
-					{
-						filtered_buffer_mean += filtered_buffer[i];
-						if (filtered_buffer[i] > filtered_buffer_max)
-						{
-							filtered_buffer_max = filtered_buffer[i];
-						}
-						else if (filtered_buffer[i] < filtered_buffer_min)
-						{
-							filtered_buffer_min = filtered_buffer[i];
-						}
-					}
-					filtered_buffer_mean /= filtered_buffer_size;
-					SEGGER_RTT_printf(0, "Filtered sample: %u\t", filtered_sample);
-					//SEGGER_RTT_printf(0, "Filtered buffer mean: %u\t", filtered_buffer_mean);
-					SEGGER_RTT_printf(0, "Max: %u\t", filtered_buffer_max);
-					SEGGER_RTT_printf(0, "Min: %u\t", filtered_buffer_min);
-					SEGGER_RTT_printf(0, "Filtered buffer size: %u\n", filtered_buffer_size);
-
 					previous_display_value = display_value;
-					display_value = (filtered_sample - filtered_buffer_min) * 63 / (filtered_buffer_max - filtered_buffer_min); //(filtered_sample - filtered_buffer_mean) * 63 / 200;
-					// if (display_value < 0)
-					// {
-					// 	display_value = 0;
-					// }
-					// else if (display_value > 63)
-					// {
-					// 	display_value = 63;
-					// }
+					display_value = getNormalisedValue(filtered_sample, filtered_buffer);
 
 					// Write to display
-					if (display_count > 95)
-					{
-						clearScreen();
-						display_count = 0;
-					}
-					traceLine(display_count, previous_display_value, display_value);
-					display_count++;
-				}
-
-				if (buffer_pointer < 31)
-				{
-					buffer_pointer++;
+					writeToDisplay();
 				}
 				else
 				{
-					buffer_pointer = 0;
+					buffer_size++;
 				}
+				buffer_pointer = (buffer_pointer + 1) & 0x1F; // Increment buffer pointer, modulo 32
 			}
 		}
 	}

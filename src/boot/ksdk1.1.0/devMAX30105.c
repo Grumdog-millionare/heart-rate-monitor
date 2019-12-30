@@ -17,15 +17,8 @@
 extern volatile WarpI2CDeviceState deviceMAX30105State;
 extern volatile uint32_t gWarpI2cBaudRateKbps;
 extern volatile uint32_t gWarpI2cTimeoutMilliseconds;
-extern volatile uint32_t gWarpSupplySettlingDelayMilliseconds;
 
 extern const uint32_t THRESHOLD_UP;
-
-void devMAX30105init(const uint8_t i2cAddress)
-{
-	deviceMAX30105State.i2cAddress = i2cAddress;
-	return;
-}
 
 CommStatus
 writeSensorRegisterMAX30105(uint8_t deviceRegister, uint8_t payload)
@@ -86,61 +79,31 @@ writeSensorRegisterMAX30105(uint8_t deviceRegister, uint8_t payload)
 	return CommStatusOK;
 }
 
-CommStatus
-configureSensorMAX30105()
+CommStatus devMAX30105init(const uint8_t i2cAddress)
 {
-	CommStatus
-		i2cWriteStatus_INTERRUPT_ENABLE_1,
-		i2cWriteStatus_PROXIMITY_THRESHOLD,
-		i2cWriteStatus_FIFO_CONFIG,
-		i2cWriteStatus_SPO2_CONFIG,
-		i2cWriteStatus_LED1_CONFIG,
-		i2cWriteStatus_LED2_CONFIG,
-		i2cWriteStatus_LED3_CONFIG,
-		i2cWriteStatus_LED_PROX_CONFIG,
-		i2cWriteStatus_MODE_CONFIG,
-		i2cWriteStatus_MULTI_LED_MODE_CONTROL_CONFIG;
+	deviceMAX30105State.i2cAddress = i2cAddress;
+	return (
 
-	// SET INTERRUPT ENABLE: Data ready interrupt = Off, Proximity interrupt = On
-	i2cWriteStatus_INTERRUPT_ENABLE_1 = writeSensorRegisterMAX30105(INTERRUPT_ENABLE_1, 0x10);
+		writeSensorRegisterMAX30105(INTERRUPT_ENABLE_1, 0x10) | // SET INTERRUPT ENABLE: Data ready interrupt = Off, Proximity interrupt = On
 
-	// SET PROX THRESHOLD: Data ready interrupt = Off, Proximity interrupt = On
-	i2cWriteStatus_PROXIMITY_THRESHOLD = writeSensorRegisterMAX30105(PROXIMITY_THRESHOLD, (THRESHOLD_UP >> 10));
+		writeSensorRegisterMAX30105(PROXIMITY_THRESHOLD, (THRESHOLD_UP >> 10)) | // SET PROX THRESHOLD: Data ready interrupt = Off, Proximity interrupt = On
 
-	// SET FIFO: Sample averaging = 4, FIFO rolls on full = True
-	i2cWriteStatus_FIFO_CONFIG = writeSensorRegisterMAX30105(FIFO_CONFIG, 0x50);
+		writeSensorRegisterMAX30105(FIFO_CONFIG, 0x50) | // SET FIFO: Sample averaging = 4, FIFO rolls on full = True
 
-	// SET SPO2: ADC range = 16384, Sample rate = 400 Hz, Pulse width = 215 us
-	i2cWriteStatus_SPO2_CONFIG = writeSensorRegisterMAX30105(SPO2_CONFIG, 0x6E);
+		writeSensorRegisterMAX30105(SPO2_CONFIG, 0x6E) | // SET SPO2: ADC range = 16384, Sample rate = 400 Hz, Pulse width = 215 us
 
-	// SET LED1 (RED) PULSE AMPLITUDE: Current level = 0.4 mA (0x02)
-	i2cWriteStatus_LED1_CONFIG = writeSensorRegisterMAX30105(LED1_PULSE_AMPLITUDE, 0x02);
+		writeSensorRegisterMAX30105(LED1_PULSE_AMPLITUDE, 0x02) | // SET LED1 (RED) PULSE AMPLITUDE: Current level = 0.4 mA (0x02)
 
-	// SET LED2 (IR) PULSE AMPLITUDE: Current level = 12.5 mA (0x3F)
-	i2cWriteStatus_LED2_CONFIG = writeSensorRegisterMAX30105(LED2_PULSE_AMPLITUDE, 0x3F);
+		writeSensorRegisterMAX30105(LED2_PULSE_AMPLITUDE, 0x3F) | // SET LED2 (IR) PULSE AMPLITUDE: Current level = 12.5 mA (0x3F)
 
-	// SET LED3 (GREEN) PULSE AMPLITUDE: Current level = 0.0 mA (0x00)
-	i2cWriteStatus_LED3_CONFIG = writeSensorRegisterMAX30105(LED3_PULSE_AMPLITUDE, 0x00);
+		writeSensorRegisterMAX30105(LED3_PULSE_AMPLITUDE, 0x00) | // SET LED3 (GREEN) PULSE AMPLITUDE: Current level = 0.0 mA (0x00)
 
-	// SET LED PROXIMITY MODE PULSE AMPLITUDE: Current level = 0.4 mA (0x02)
-	i2cWriteStatus_LED_PROX_CONFIG = writeSensorRegisterMAX30105(PROX_MODE_LED_PULSE_AMPLITUDE, 0x02);
+		writeSensorRegisterMAX30105(PROX_MODE_LED_PULSE_AMPLITUDE, 0x02) | // SET LED PROXIMITY MODE PULSE AMPLITUDE: Current level = 0.4 mA (0x02)
 
-	// SET MODE: Particle sensing mode using 2 LEDs
-	i2cWriteStatus_MODE_CONFIG = writeSensorRegisterMAX30105(MODE_CONFIG, 0x03);
+		writeSensorRegisterMAX30105(MODE_CONFIG, 0x03) | // SET MODE: Particle sensing mode using 2 LEDs
 
-	// SET MULTI LED MODE CONTROL: Particle sensing mode using 2 LEDs
-	i2cWriteStatus_MULTI_LED_MODE_CONTROL_CONFIG = writeSensorRegisterMAX30105(MULTI_LED_MODE_CONTROL_CONFIG, 0x21);
-
-	return (i2cWriteStatus_INTERRUPT_ENABLE_1 |
-			i2cWriteStatus_PROXIMITY_THRESHOLD |
-			i2cWriteStatus_FIFO_CONFIG |
-			i2cWriteStatus_SPO2_CONFIG |
-			i2cWriteStatus_LED1_CONFIG |
-			i2cWriteStatus_LED2_CONFIG |
-			i2cWriteStatus_LED3_CONFIG |
-			i2cWriteStatus_LED_PROX_CONFIG |
-			i2cWriteStatus_MODE_CONFIG |
-			i2cWriteStatus_MULTI_LED_MODE_CONTROL_CONFIG);
+		writeSensorRegisterMAX30105(MULTI_LED_MODE_CONTROL_CONFIG, 0x21) // SET MULTI LED MODE CONTROL: Particle sensing mode using 2 LEDs
+	);
 }
 
 CommStatus
