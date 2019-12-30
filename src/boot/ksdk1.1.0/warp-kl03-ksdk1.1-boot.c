@@ -93,6 +93,8 @@ int8_t previous_display_value = 0;
 int8_t display_value = 0;
 int8_t display_count = 0;
 
+uint8_t temperature;
+
 void enableSPIpins(void)
 {
 	CLOCK_SYS_EnableSpiClock(0);
@@ -228,7 +230,26 @@ uint8_t getNormalisedValue(uint16_t filtered_sample, uint16_t *filtered_buffer)
 		}
 	}
 	filtered_buffer_mean /= filtered_buffer_size;
-	return (filtered_sample - filtered_buffer_min) * 63 / (filtered_buffer_max - filtered_buffer_min);
+	return (filtered_sample - filtered_buffer_min) * 52 / (filtered_buffer_max - filtered_buffer_min);
+}
+
+void readTemp(void)
+{
+	readSensorRegisterMAX30105(TEMP_INT, 1);
+	temperature = deviceMAX30105State.i2cBuffer[0];
+	return;
+}
+
+void displayTemp(void)
+{
+	writeCharacter(91, 63, 'o');
+	int i = 85;
+	while (temperature)
+	{
+		writeDigit(i, 63, temperature % 10);
+		temperature /= 10;
+		i -= 6;
+	}
 }
 
 void writeToDisplay(void)
@@ -237,6 +258,8 @@ void writeToDisplay(void)
 	{
 		clearScreen();
 		display_count = 0;
+		readTemp();
+		displayTemp();
 	}
 	traceLine(display_count, previous_display_value, display_value);
 	display_count++;
@@ -351,6 +374,12 @@ int main(void)
 					// Calculate normalised display value
 					previous_display_value = display_value;
 					display_value = getNormalisedValue(filtered_sample, filtered_buffer);
+
+					// Request a temperature reading every 96 samples, 0.5 seconds before reading it
+					if (display_count == 46)
+					{
+						writeSensorRegisterMAX30105(TEMP_CONFIG, 0x01);
+					}
 
 					// Write to display
 					writeToDisplay();

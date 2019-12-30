@@ -43,6 +43,7 @@ writeSensorRegisterMAX30105(uint8_t deviceRegister, uint8_t payload)
 	case 0x10:
 	case 0x11:
 	case 0x12:
+	case 0x21:
 	case 0x30:
 	{
 		/* OK */

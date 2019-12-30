@@ -46,4 +46,8 @@ void clearScreen(void);
 
 void traceLine(uint8_t column, uint8_t prev, uint8_t next);
 
+void writeDigit(uint8_t column, uint8_t row, uint8_t digit);
+
+void writeCharacter(uint8_t column, uint8_t row, char character);
+
 int devSSD1331init(void);

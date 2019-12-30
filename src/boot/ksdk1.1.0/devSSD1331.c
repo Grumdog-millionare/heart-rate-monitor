@@ -22,7 +22,7 @@ writeCommand(uint8_t commandByte)
 	 *	Make sure there is a high-to-low transition by first driving high, delay, then drive low.
 	 */
 	GPIO_DRV_SetPinOutput(kSSD1331PinCSn);
-	OSA_TimeDelay(1);
+	OSA_TimeDelay(0);
 	GPIO_DRV_ClearPinOutput(kSSD1331PinCSn);
 
 	/*
@@ -66,6 +66,301 @@ void traceLine(uint8_t column, uint8_t prev, uint8_t next)
 	writeCommand(0xFF);		 // Red
 	writeCommand(0x00);		 // Green
 	writeCommand(0x00);		 // Blue
+}
+
+// Draws digits in a 5x9 shaped box starting at the top left coordinates given
+void writeDigit(uint8_t column, uint8_t row, uint8_t digit)
+{
+	row = 63 - row; // Screen is upside down
+	switch (digit)
+	{
+	case 0:
+	{
+		writeCommand(kSSD1331CommandDRAWRECT);
+		writeCommand(column);	 // Col start
+		writeCommand(row);		  // Row start
+		writeCommand(column + 4); // Col end
+		writeCommand(row + 8);	// Row end
+		writeCommand(0xFF);		  // Line red
+		writeCommand(0xFF);		  // Line green
+		writeCommand(0xFF);		  // Line blue
+		writeCommand(0x00);		  // Fill red
+		writeCommand(0x00);		  // Fill green
+		writeCommand(0x00);		  // Fill blue
+
+		break;
+	}
+	case 1:
+	{
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column + 2); // Column start address
+		writeCommand(row);		  // Row start address
+		writeCommand(column + 2); // Column end address
+		writeCommand(row + 8);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		break;
+	}
+	case 2:
+	{
+		for (int i = 0; i < 9; i += 4)
+		{
+			writeCommand(kSSD1331CommandDRAWLINE);
+			writeCommand(column);	 // Column start address
+			writeCommand(row + i);	// Row start address
+			writeCommand(column + 4); // Column end address
+			writeCommand(row + i);	// Row end address
+			writeCommand(0xFF);		  // Red
+			writeCommand(0xFF);		  // Green
+			writeCommand(0xFF);		  // Blue
+		}
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column + 4); // Column start address
+		writeCommand(row);		  // Row start address
+		writeCommand(column + 4); // Column end address
+		writeCommand(row + 4);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column);  // Column start address
+		writeCommand(row + 4); // Row start address
+		writeCommand(column);  // Column end address
+		writeCommand(row + 8); // Row end address
+		writeCommand(0xFF);	// Red
+		writeCommand(0xFF);	// Green
+		writeCommand(0xFF);	// Blue
+
+		break;
+	}
+	case 3:
+	{
+		for (int i = 0; i < 9; i += 4)
+		{
+			writeCommand(kSSD1331CommandDRAWLINE);
+			writeCommand(column);	 // Column start address
+			writeCommand(row + i);	// Row start address
+			writeCommand(column + 4); // Column end address
+			writeCommand(row + i);	// Row end address
+			writeCommand(0xFF);		  // Red
+			writeCommand(0xFF);		  // Green
+			writeCommand(0xFF);		  // Blue
+		}
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column + 4); // Column start address
+		writeCommand(row);		  // Row start address
+		writeCommand(column + 4); // Column end address
+		writeCommand(row + 8);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		break;
+	}
+	case 4:
+	{
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column);  // Column start address
+		writeCommand(row);	 // Row start address
+		writeCommand(column);  // Column end address
+		writeCommand(row + 4); // Row end address
+		writeCommand(0xFF);	// Red
+		writeCommand(0xFF);	// Green
+		writeCommand(0xFF);	// Blue
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column);	 // Column start address
+		writeCommand(row + 4);	// Row start address
+		writeCommand(column + 4); // Column end address
+		writeCommand(row + 4);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column + 4); // Column start address
+		writeCommand(row);		  // Row start address
+		writeCommand(column + 4); // Column end address
+		writeCommand(row + 8);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		break;
+	}
+
+	case 5:
+	{
+		for (int i = 0; i < 9; i += 4)
+		{
+			writeCommand(kSSD1331CommandDRAWLINE);
+			writeCommand(column);	 // Column start address
+			writeCommand(row + i);	// Row start address
+			writeCommand(column + 4); // Column end address
+			writeCommand(row + i);	// Row end address
+			writeCommand(0xFF);		  // Red
+			writeCommand(0xFF);		  // Green
+			writeCommand(0xFF);		  // Blue
+		}
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column);  // Column start address
+		writeCommand(row);	 // Row start address
+		writeCommand(column);  // Column end address
+		writeCommand(row + 4); // Row end address
+		writeCommand(0xFF);	// Red
+		writeCommand(0xFF);	// Green
+		writeCommand(0xFF);	// Blue
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column + 4); // Column start address
+		writeCommand(row + 4);	// Row start address
+		writeCommand(column + 4); // Column end address
+		writeCommand(row + 8);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		break;
+	}
+	case 6:
+	{
+		for (int i = 0; i < 9; i += 4)
+		{
+			writeCommand(kSSD1331CommandDRAWLINE);
+			writeCommand(column);	 // Column start address
+			writeCommand(row + i);	// Row start address
+			writeCommand(column + 4); // Column end address
+			writeCommand(row + i);	// Row end address
+			writeCommand(0xFF);		  // Red
+			writeCommand(0xFF);		  // Green
+			writeCommand(0xFF);		  // Blue
+		}
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column);  // Column start address
+		writeCommand(row);	 // Row start address
+		writeCommand(column);  // Column end address
+		writeCommand(row + 8); // Row end address
+		writeCommand(0xFF);	// Red
+		writeCommand(0xFF);	// Green
+		writeCommand(0xFF);	// Blue
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column + 4); // Column start address
+		writeCommand(row + 4);	// Row start address
+		writeCommand(column + 4); // Column end address
+		writeCommand(row + 8);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		break;
+	}
+	case 7:
+	{
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column);	 // Column start address
+		writeCommand(row);		  // Row start address
+		writeCommand(column + 4); // Column end address
+		writeCommand(row);		  // Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column + 4); // Column start address
+		writeCommand(row);		  // Row start address
+		writeCommand(column);	 // Column end address
+		writeCommand(row + 8);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		break;
+	}
+	case 8:
+	{
+		writeCommand(kSSD1331CommandDRAWRECT);
+		writeCommand(column);	 // Col start
+		writeCommand(row);		  // Row start
+		writeCommand(column + 4); // Col end
+		writeCommand(row + 8);	// Row end
+		writeCommand(0xFF);		  // Line red
+		writeCommand(0xFF);		  // Line green
+		writeCommand(0xFF);		  // Line blue
+		writeCommand(0x00);		  // Fill red
+		writeCommand(0x00);		  // Fill green
+		writeCommand(0x00);		  // Fill blue
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column);	 // Column start address
+		writeCommand(row + 4);	// Row start address
+		writeCommand(column + 4); // Column end address
+		writeCommand(row + 4);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		break;
+	}
+	case 9:
+	{
+		writeCommand(kSSD1331CommandDRAWRECT);
+		writeCommand(column);	 // Col start
+		writeCommand(row);		  // Row start
+		writeCommand(column + 4); // Col end
+		writeCommand(row + 4);	// Row end
+		writeCommand(0xFF);		  // Line red
+		writeCommand(0xFF);		  // Line green
+		writeCommand(0xFF);		  // Line blue
+		writeCommand(0x00);		  // Fill red
+		writeCommand(0x00);		  // Fill green
+		writeCommand(0x00);		  // Fill blue
+
+		writeCommand(kSSD1331CommandDRAWLINE);
+		writeCommand(column + 4); // Column start address
+		writeCommand(row + 4);	// Row start address
+		writeCommand(column + 4); // Column end address
+		writeCommand(row + 8);	// Row end address
+		writeCommand(0xFF);		  // Red
+		writeCommand(0xFF);		  // Green
+		writeCommand(0xFF);		  // Blue
+
+		break;
+	}
+	}
+	return;
+}
+
+// Writes a character symbol in a 5x9 shaped box starting at the top left
+void writeCharacter(uint8_t column, uint8_t row, char character)
+{
+	row = 63 - row; // Screen is upside down
+	switch (character)
+	{
+	case 'o':
+	{
+		writeCommand(kSSD1331CommandDRAWRECT);
+		writeCommand(column);	 // Col start
+		writeCommand(row);		  // Row start
+		writeCommand(column + 3); // Col end
+		writeCommand(row + 3);	// Row end
+		writeCommand(0xFF);		  // Line red
+		writeCommand(0xFF);		  // Line green
+		writeCommand(0xFF);		  // Line blue
+		writeCommand(0x00);		  // Fill red
+		writeCommand(0x00);		  // Fill green
+		writeCommand(0x00);		  // Fill blue
+	}
+	}
+	return;
 }
 
 int devSSD1331init(void)
