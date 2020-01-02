@@ -75,7 +75,7 @@ volatile uint32_t gWarpSpiTimeoutMicroseconds = 5;
 // CONSTANTS
 const uint32_t THRESHOLD_UP = 1024;
 const uint32_t THRESHOLD_DOWN = 2000;
-const uint16_t FIR_COEFFS[12] = {172, 321, 579, 927, 1360, 1858, 2390, 2916, 3391, 3768, 4012, 4096};
+const uint32_t FIR_COEFFS[13] = {17, 67, 174, 383, 731, 1232, 1874, 2615, 3391, 4119, 4715, 5107, 20861}; //{17, 67, 174, 383, 731, 1232, 1874, 2615, 3391, 4119, 4715, 5107, 6000};
 
 // GLOBAL VARIABLES
 volatile bool active = false;
@@ -211,12 +211,12 @@ void reset(void)
 
 int16_t bandPassFilter(uint16_t *buffer)
 {
-	uint64_t f = FIR_COEFFS[11] * buffer[(buffer_pointer - 11) & 0x1F];
-	for (int i = 0; i < 11; i++)
+	uint64_t f = FIR_COEFFS[13] * buffer[(buffer_pointer - 13) & 0x1F];
+	for (int i = 0; i < 13; i++)
 	{
-		f += FIR_COEFFS[i] * (buffer[(buffer_pointer - 21 + i) & 0x1F] + buffer[(buffer_pointer - i) & 0x1F]);
+		f += FIR_COEFFS[i] * (buffer[(buffer_pointer - 25 + i) & 0x1F] + buffer[(buffer_pointer - i) & 0x1F]);
 	}
-	f /= 47484;
+	f = f >> 16;
 
 	uint64_t g = 0;
 	for (int i = 0; i < buffer_size; i++)
